@@ -51,6 +51,14 @@ const AdminDashboard = () => {
         navigate("/admin/login");
         return;
       }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", session.user.id)
+        .single();
+      setUserName(profile?.full_name || session.user.email || "Admin");
+
       fetchItems();
     };
     checkAuth();
