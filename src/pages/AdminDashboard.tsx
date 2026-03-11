@@ -21,6 +21,7 @@ const AdminDashboard = () => {
   const [category, setCategory] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
   const fetchItems = useCallback(async () => {
