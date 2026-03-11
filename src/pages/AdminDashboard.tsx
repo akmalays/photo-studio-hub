@@ -157,12 +157,22 @@ const AdminDashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden font-body text-sm text-muted-foreground sm:inline">
+              Halo, {userName}
+            </span>
             <a
               href="/"
               className="font-body text-xs text-muted-foreground transition-colors hover:text-primary sm:text-sm"
             >
               Lihat Website
             </a>
+            <button
+              onClick={() => navigate("/admin/settings")}
+              className="flex items-center gap-2 border border-border px-3 py-2 font-body text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary sm:px-4 sm:text-sm"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Pengaturan</span>
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 border border-border px-3 py-2 font-body text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive sm:px-4 sm:text-sm"
