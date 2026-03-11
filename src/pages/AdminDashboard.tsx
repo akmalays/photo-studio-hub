@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Plus, Trash2, Image, GripVertical } from "lucide-react";
+import { LogOut, Plus, Trash2, Image, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 interface PortfolioItem {
@@ -21,6 +21,7 @@ const AdminDashboard = () => {
   const [category, setCategory] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
   const fetchItems = useCallback(async () => {
@@ -50,6 +51,14 @@ const AdminDashboard = () => {
         navigate("/admin/login");
         return;
       }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", session.user.id)
+        .single();
+      setUserName(profile?.full_name || session.user.email || "Admin");
+
       fetchItems();
     };
     checkAuth();
@@ -148,12 +157,22 @@ const AdminDashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden font-body text-sm text-muted-foreground sm:inline">
+              Halo, {userName}
+            </span>
             <a
               href="/"
               className="font-body text-xs text-muted-foreground transition-colors hover:text-primary sm:text-sm"
             >
               Lihat Website
             </a>
+            <button
+              onClick={() => navigate("/admin/settings")}
+              className="flex items-center gap-2 border border-border px-3 py-2 font-body text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary sm:px-4 sm:text-sm"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Pengaturan</span>
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 border border-border px-3 py-2 font-body text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive sm:px-4 sm:text-sm"
