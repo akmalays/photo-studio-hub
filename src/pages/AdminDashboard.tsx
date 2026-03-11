@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Plus, Trash2, Image, GripVertical } from "lucide-react";
+import { LogOut, Plus, Trash2, Image, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 interface PortfolioItem {
