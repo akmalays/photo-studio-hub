@@ -1,13 +1,30 @@
 import { useState } from "react";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, MapPin, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Terima kasih! Pesan Anda telah terkirim.");
-    setFormData({ name: "", email: "", message: "" });
+    setSending(true);
+    try {
+      const { error } = await supabase.from("contact_messages").insert({
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+      });
+      if (error) throw error;
+      setSent(true);
+      setFormData({ name: "", email: "", message: "" });
+      setTimeout(() => setSent(false), 4000);
+    } catch {
+      alert("Gagal mengirim pesan. Silakan coba lagi.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -21,13 +38,12 @@ const ContactSection = () => {
             Mari <span className="italic text-gradient-gold">Berkolaborasi</span>
           </h2>
           <p className="mb-8 max-w-md font-body text-base text-muted-foreground sm:mb-10 sm:text-lg">
-            Tertarik bekerja sama? Hubungi saya untuk mendiskusikan proyek Anda.
+            Tertarik bekerja sama? Kirim pesan melalui form ini atau hubungi langsung via WhatsApp di tombol hijau pojok kanan bawah.
           </p>
 
           <div className="space-y-6">
             {[
               { icon: Mail, text: "hello@fotografer.com" },
-              { icon: Phone, text: "+62 812 3456 7890" },
               { icon: MapPin, text: "Jakarta, Indonesia" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-4">
@@ -74,9 +90,19 @@ const ContactSection = () => {
           </div>
           <button
             type="submit"
-            className="w-full border border-primary bg-primary px-8 py-3 font-body text-sm uppercase tracking-widest text-primary-foreground transition-all duration-300 hover:bg-transparent hover:text-primary"
+            disabled={sending}
+            className="flex w-full items-center justify-center gap-2 border border-primary bg-primary px-8 py-3 font-body text-sm uppercase tracking-widest text-primary-foreground transition-all duration-300 hover:bg-transparent hover:text-primary disabled:opacity-50"
           >
-            Kirim Pesan
+            {sending ? (
+              "Mengirim..."
+            ) : sent ? (
+              "✓ Pesan Terkirim!"
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                Kirim Pesan
+              </>
+            )}
           </button>
         </form>
       </div>
