@@ -17,6 +17,12 @@ const ContactSection = () => {
         message: formData.message,
       });
       if (error) throw error;
+
+      // Send email notification (fire and forget)
+      supabase.functions.invoke("send-contact-notification", {
+        body: { name: formData.name, email: formData.email, message: formData.message },
+      }).catch(console.error);
+
       setSent(true);
       setFormData({ name: "", email: "", message: "" });
       setTimeout(() => setSent(false), 4000);

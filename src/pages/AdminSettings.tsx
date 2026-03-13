@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Save, UserPlus, Trash2, Shield, ShieldOff, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { LogOut, Save, UserPlus, Trash2, Shield, ShieldOff, ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserItem {
@@ -28,6 +28,9 @@ const AdminSettings = () => {
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
   const [creating, setCreating] = useState(false);
+
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
 
   const navigate = useNavigate();
 
@@ -76,6 +79,14 @@ const AdminSettings = () => {
         full_name: profile?.full_name || "",
       });
       setFullName(profile?.full_name || "");
+      // Load notification email
+      const { data: emailSetting } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "notification_email")
+        .single();
+      if (emailSetting) setNotificationEmail(emailSetting.value);
+
       fetchUsers();
     };
     init();
@@ -144,6 +155,21 @@ const AdminSettings = () => {
     } catch (e: any) {
       toast.error(e.message || "Gagal menghapus user");
     }
+  };
+
+  const handleSaveNotificationEmail = async () => {
+    setSavingEmail(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({ value: notificationEmail, updated_at: new Date().toISOString() })
+        .eq("key", "notification_email");
+      if (error) throw error;
+      toast.success("Email notifikasi berhasil diperbarui!");
+    } catch (e: any) {
+      toast.error(e.message || "Gagal menyimpan email");
+    }
+    setSavingEmail(false);
   };
 
   const handleLogout = async () => {
@@ -247,6 +273,39 @@ const AdminSettings = () => {
             <Save className="h-4 w-4" />
             {saving ? "Menyimpan..." : "Simpan"}
           </button>
+        </section>
+
+        {/* Email Notification Settings */}
+        <section className="mb-10 border border-border bg-card p-4 sm:p-6">
+          <h2 className="mb-6 font-display text-xl text-foreground flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            Email Notifikasi
+          </h2>
+          <p className="mb-4 font-body text-sm text-muted-foreground">
+            Pesan dari form kontak website akan dikirim ke email ini.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">
+                Email Tujuan
+              </label>
+              <input
+                type="email"
+                value={notificationEmail}
+                onChange={(e) => setNotificationEmail(e.target.value)}
+                placeholder="email@contoh.com"
+                className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary"
+              />
+            </div>
+            <button
+              onClick={handleSaveNotificationEmail}
+              disabled={savingEmail}
+              className="flex items-center gap-2 border border-primary bg-primary px-6 py-3 font-body text-sm uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" />
+              {savingEmail ? "Menyimpan..." : "Simpan"}
+            </button>
+          </div>
         </section>
 
         {/* User Management */}
