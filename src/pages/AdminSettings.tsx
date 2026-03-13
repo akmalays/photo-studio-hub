@@ -79,6 +79,14 @@ const AdminSettings = () => {
         full_name: profile?.full_name || "",
       });
       setFullName(profile?.full_name || "");
+      // Load notification email
+      const { data: emailSetting } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "notification_email")
+        .single();
+      if (emailSetting) setNotificationEmail(emailSetting.value);
+
       fetchUsers();
     };
     init();
