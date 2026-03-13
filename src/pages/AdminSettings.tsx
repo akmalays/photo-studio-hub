@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Save, UserPlus, Trash2, Shield, ShieldOff, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { LogOut, Save, UserPlus, Trash2, Shield, ShieldOff, ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserItem {
