@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
               </div>
               
               <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
-                <p style="color: #aaa; font-size: 12px; margin: 0;">Email ini dikirim otomatis dari form kontak website LENS.</p>
+                <p style="color: #aaa; font-size: 12px; margin: 0;">Email ini dikirim otomatis dari form kontak website wArna Studio.</p>
               </div>
             </div>
           `,

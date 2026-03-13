@@ -87,7 +87,7 @@ const Index = () => {
 
   return (
     <>
-      {loading && <LensLoader onFinish={() => setLoading(false)} />}
+      {loading && <StudioLoader onFinish={() => setLoading(false)} />}
       <div className="min-h-screen bg-background">
         <Navbar />
         <HeroSection />

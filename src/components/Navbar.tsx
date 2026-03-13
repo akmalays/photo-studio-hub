@@ -14,7 +14,7 @@ const Navbar = () => {
     <nav className="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
       <div className="flex items-center justify-between px-8 py-5 md:px-16 lg:px-24">
         <a href="#" className="font-display text-xl font-semibold text-foreground">
-          LENS<span className="text-primary">.</span>
+          wArna<span className="text-primary"> Studio</span>
         </a>
 
         <div className="hidden items-center gap-10 md:flex">
