@@ -7,7 +7,7 @@ import ContactSection from "@/components/ContactSection";
 import FooterSection from "@/components/FooterSection";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
-const LensLoader = ({ onFinish }: { onFinish: () => void }) => {
+const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -62,7 +62,7 @@ const LensLoader = ({ onFinish }: { onFinish: () => void }) => {
 
       {/* Brand */}
       <h1 className="font-display text-3xl font-semibold tracking-wider text-foreground">
-        LENS<span className="text-primary">.</span>
+        wArna<span className="text-primary"> Studio</span>
       </h1>
       <p className="mt-2 font-body text-xs uppercase tracking-[0.3em] text-muted-foreground">
         Photography Studio
@@ -87,7 +87,7 @@ const Index = () => {
 
   return (
     <>
-      {loading && <LensLoader onFinish={() => setLoading(false)} />}
+      {loading && <StudioLoader onFinish={() => setLoading(false)} />}
       <div className="min-h-screen bg-background">
         <Navbar />
         <HeroSection />

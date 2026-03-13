@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
           html: `
             <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 40px;">
               <div style="border-bottom: 2px solid #c9a96e; padding-bottom: 20px; margin-bottom: 30px;">
-                <h1 style="font-size: 24px; color: #1a1a1a; margin: 0;">LENS<span style="color: #c9a96e;">.</span></h1>
+                <h1 style="font-size: 24px; color: #1a1a1a; margin: 0;">wArna<span style="color: #c9a96e;"> Studio</span></h1>
                 <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;">Pesan Baru dari Website</p>
               </div>
               
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
               </div>
               
               <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
-                <p style="color: #aaa; font-size: 12px; margin: 0;">Email ini dikirim otomatis dari form kontak website LENS.</p>
+                <p style="color: #aaa; font-size: 12px; margin: 0;">Email ini dikirim otomatis dari form kontak website wArna Studio.</p>
               </div>
             </div>
           `,
