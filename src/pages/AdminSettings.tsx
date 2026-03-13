@@ -157,6 +157,21 @@ const AdminSettings = () => {
     }
   };
 
+  const handleSaveNotificationEmail = async () => {
+    setSavingEmail(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({ value: notificationEmail, updated_at: new Date().toISOString() })
+        .eq("key", "notification_email");
+      if (error) throw error;
+      toast.success("Email notifikasi berhasil diperbarui!");
+    } catch (e: any) {
+      toast.error(e.message || "Gagal menyimpan email");
+    }
+    setSavingEmail(false);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
