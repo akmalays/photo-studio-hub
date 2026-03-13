@@ -62,7 +62,7 @@ const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
 
       {/* Brand */}
       <h1 className="font-display text-3xl font-semibold tracking-wider text-foreground">
-        LENS<span className="text-primary">.</span>
+        wArna<span className="text-primary"> Studio</span>
       </h1>
       <p className="mt-2 font-body text-xs uppercase tracking-[0.3em] text-muted-foreground">
         Photography Studio
