@@ -29,6 +29,9 @@ const AdminSettings = () => {
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
   const [creating, setCreating] = useState(false);
 
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+
   const navigate = useNavigate();
 
   const callAdmin = useCallback(async (body: Record<string, unknown>) => {
