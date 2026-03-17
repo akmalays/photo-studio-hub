@@ -285,7 +285,7 @@ const GallerySection = () => {
                 <img
                   src={photos[selectedIndex].src}
                   alt={photos[selectedIndex].title}
-                  className={`max-h-[85vh] max-w-full object-contain transition-all duration-200 ease-out ${
+                  className={`max-h-[85vh] max-w-full rounded-lg object-contain transition-all duration-200 ease-out ${
                     slideDirection === "left"
                       ? "-translate-x-8 opacity-0"
                       : slideDirection === "right"
