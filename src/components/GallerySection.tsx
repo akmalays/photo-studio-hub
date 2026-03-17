@@ -189,7 +189,7 @@ const GallerySection = () => {
         {photos.map((photo, i) => (
           <div
             key={i}
-            className={`gallery-image group relative cursor-pointer ${photo.span}`}
+            className={`gallery-image group relative cursor-pointer overflow-hidden rounded-lg ${photo.span}`}
             onClick={() => setSelectedIndex(i)}
           >
             <img
