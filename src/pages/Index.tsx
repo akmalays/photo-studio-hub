@@ -42,6 +42,14 @@ const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
         />
       </div>
 
+      {/* Brand */}
+      <h1 className="font-display text-3xl font-semibold tracking-wider text-foreground">
+        wArna<span className="text-primary"> Studio</span>
+      </h1>
+      <p className="mt-2 font-body text-xs uppercase tracking-[0.3em] text-muted-foreground">
+        Photography Studio
+      </p>
+
       {/* Progress bar */}
       <div className="mt-6 h-[1px] w-48 bg-border">
         <div
