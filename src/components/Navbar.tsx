@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import logo from "@/assets/logo-warna.jpg";
 
 const navLinks = [
   { label: "Portfolio", href: "#portfolio" },
@@ -12,9 +13,9 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
-      <div className="flex items-center justify-between px-8 py-5 md:px-16 lg:px-24">
-        <a href="#" className="font-display text-xl font-semibold text-foreground">
-          wArna<span className="text-primary"> Studio</span>
+      <div className="flex items-center justify-between px-8 py-3 md:px-16 lg:px-24">
+        <a href="#" className="flex items-center gap-2">
+          <img src={logo} alt="wArna Studio" className="h-10 w-auto" />
         </a>
 
         <div className="hidden items-center gap-10 md:flex">
