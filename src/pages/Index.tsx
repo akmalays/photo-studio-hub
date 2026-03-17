@@ -6,7 +6,7 @@ import AboutSection from "@/components/AboutSection";
 import ContactSection from "@/components/ContactSection";
 import FooterSection from "@/components/FooterSection";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import logo from "@/assets/logo-warna.jpg";
+import logo from "@/assets/logo-warna-transparent.png";
 
 const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -41,6 +41,14 @@ const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
           className="h-28 w-auto animate-pulse"
         />
       </div>
+
+      {/* Brand */}
+      <h1 className="font-display text-3xl font-semibold tracking-wider text-foreground">
+        wArna<span className="text-primary"> Studio</span>
+      </h1>
+      <p className="mt-2 font-body text-xs uppercase tracking-[0.3em] text-muted-foreground">
+        Photography Studio
+      </p>
 
       {/* Progress bar */}
       <div className="mt-6 h-[1px] w-48 bg-border">
