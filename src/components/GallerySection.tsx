@@ -198,12 +198,11 @@ const GallerySection = () => {
               className="h-full w-full object-cover"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-background/0 transition-all duration-500 group-hover:bg-background/60" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-              <p className="font-body text-xs uppercase tracking-[0.3em] text-primary">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/80 to-transparent p-3 pt-8">
+              <p className="font-body text-[10px] uppercase tracking-[0.25em] text-primary sm:text-xs">
                 {photo.category}
               </p>
-              <p className="mt-2 font-display text-xl text-foreground sm:text-2xl">
+              <p className="mt-0.5 font-display text-sm text-foreground sm:text-base">
                 {photo.title}
               </p>
             </div>
