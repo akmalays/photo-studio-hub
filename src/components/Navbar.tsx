@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import logo from "@/assets/logo-warna-transparent.png";
+import {Menu, X} from "lucide-react";
+import {useState} from "react";
+
+import logo from "@/assets/logo-warna.jpg";
 
 const navLinks = [
-  { label: "Portfolio", href: "#portfolio" },
-  { label: "Tentang", href: "#tentang" },
-  { label: "Kontak", href: "#kontak" },
+  {label: "Portfolio", href: "#portfolio"},
+  {label: "Tentang", href: "#tentang"},
+  {label: "Kontak", href: "#kontak"},
 ];
 
 const Navbar = () => {
@@ -23,21 +24,13 @@ const Navbar = () => {
 
         <div className="hidden items-center gap-10 md:flex">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
-            >
+            <a key={link.label} href={link.href} className="font-body text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary">
               {link.label}
             </a>
           ))}
         </div>
 
-        <button
-          onClick={() => setOpen(!open)}
-          className="text-foreground md:hidden"
-          aria-label="Toggle menu"
-        >
+        <button onClick={() => setOpen(!open)} className="text-foreground md:hidden" aria-label="Toggle menu">
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
@@ -49,8 +42,7 @@ const Navbar = () => {
               key={link.label}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="font-body text-sm uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary"
-            >
+              className="font-body text-sm uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-primary">
               {link.label}
             </a>
           ))}

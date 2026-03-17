@@ -1,4 +1,4 @@
-import logo from "@/assets/logo-warna-transparent.png";
+import logo from "@/assets/logo-warna.jpg";
 
 const FooterSection = () => {
   return (
@@ -10,9 +10,7 @@ const FooterSection = () => {
             wArna<span className="text-primary"> Studio</span>
           </span>
         </a>
-        <p className="font-body text-sm text-muted-foreground">
-          © 2026 wArna Studio Photography. All rights reserved.
-        </p>
+        <p className="font-body text-sm text-muted-foreground">© 2026 wArna Studio Photography. All rights reserved.</p>
       </div>
     </footer>
   );
