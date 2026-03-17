@@ -16,7 +16,7 @@
     "build:railway": "npm run build:api",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:api": "node dist-server/index.js",
+    "start:api": "bun server/index.ts",
     "start": "npm run start:api",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -7,9 +7,6 @@ echo "NPM:  $(npm -v)"
 # Install deps (Railway cache will speed this up)
 npm ci
 
-# Build API server
-npm run build:api
-
-# Start API server
-exec npm run start:api
+# Start API server (Bun runs TS directly)
+exec bun server/index.ts
 
