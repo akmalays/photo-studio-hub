@@ -1,4 +1,4 @@
-import logo from "@/assets/logo-warna.jpg";
+import logo from "@/assets/logo-warna-transparent.png";
 
 const FooterSection = () => {
   return (
