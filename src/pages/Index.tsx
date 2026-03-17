@@ -38,7 +38,7 @@ const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
         <img
           src={logo}
           alt="wArna Studio"
-          className="h-28 w-auto animate-pulse"
+          className="h-28 w-28 rounded-full bg-white object-contain p-2 animate-pulse"
         />
       </div>
 
