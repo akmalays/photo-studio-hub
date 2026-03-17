@@ -6,7 +6,7 @@ import AboutSection from "@/components/AboutSection";
 import ContactSection from "@/components/ContactSection";
 import FooterSection from "@/components/FooterSection";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import logo from "@/assets/logo-warna.jpg";
+import logo from "@/assets/logo-warna-transparent.png";
 
 const StudioLoader = ({ onFinish }: { onFinish: () => void }) => {
   const [progress, setProgress] = useState(0);
