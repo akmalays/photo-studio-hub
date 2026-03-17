@@ -5,7 +5,7 @@ const FooterSection = () => {
     <footer className="border-t border-border px-8 py-12 md:px-16 lg:px-24">
       <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
         <a href="#" className="flex items-center gap-2">
-          <img src={logo} alt="wArna Studio" className="h-10 w-auto" />
+          <img src={logo} alt="wArna Studio" className="h-10 w-10 rounded-full bg-white object-contain p-1" />
           <span className="font-display text-lg font-semibold text-foreground">
             wArna<span className="text-primary"> Studio</span>
           </span>
