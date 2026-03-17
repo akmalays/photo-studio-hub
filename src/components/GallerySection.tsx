@@ -293,7 +293,7 @@ const GallerySection = () => {
                       : "translate-x-0 opacity-100"
                   }`}
                 />
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-background/80 px-5 py-2.5 text-center backdrop-blur-sm">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-xl bg-background/80 px-5 py-2.5 text-center backdrop-blur-sm">
                   <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
                     {photos[selectedIndex].category}
                   </p>
