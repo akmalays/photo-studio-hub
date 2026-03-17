@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import logo from "@/assets/logo-warna.jpg";
+import logo from "@/assets/logo-warna-transparent.png";
 
 const navLinks = [
   { label: "Portfolio", href: "#portfolio" },
