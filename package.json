@@ -11,16 +11,14 @@
     "npm": ">=10"
   },
   "scripts": {
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "build:frontend": "npm run build --workspace=frontend",
-    "build:backend": "npm run build --workspace=backend",
-    "build:api": "npm run build:backend",
-    "build": "npm run build:api",
-    "start:api": "npm run start --workspace=backend",
-    "start": "npm run start:api",
-    "install:all": "npm install"
+    "dev:frontend": "bun run --cwd frontend dev",
+    "dev:backend": "bun run --cwd backend dev",
+    "dev": "concurrently \"bun run dev:frontend\" \"bun run dev:backend\"",
+    "build:frontend": "bun run --cwd frontend build",
+    "build:backend": "bun run --cwd backend build",
+    "build": "bun run build:backend",
+    "start": "bun run --cwd backend start",
+    "install:all": "bun install"
   },
   "devDependencies": {
     "@playwright/test": "^1.42.1",
