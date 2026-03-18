@@ -20,6 +20,7 @@ dist-server/
 *.local
 
 # Environment variables (secrets)
+env
 .env
 .env.*
 !.env.example

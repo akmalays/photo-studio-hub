@@ -1,12 +1,12 @@
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_20", "bun"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["bun install"]
 
 [phases.build]
-cmds = ["npm run build:api"]
+cmds = ["bun run --cwd backend build"]
 
 [start]
-cmd = "npm run start:api"
+cmd = "bun run --cwd backend start"
 
