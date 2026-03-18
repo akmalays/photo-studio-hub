@@ -17,7 +17,9 @@ Deno.serve(async (req) => {
     );
 
     // Verify caller is admin
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing Authorization header");
+
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) throw new Error("Unauthorized");
@@ -30,7 +32,13 @@ Deno.serve(async (req) => {
       .single();
     if (!roleCheck) throw new Error("Not an admin");
 
-    const { action, ...params } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
+    const { action, ...params } = body;
 
     if (action === "list_users") {
       const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
@@ -63,8 +71,9 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update_password") {
-      const { new_password } = params;
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password: new_password });
+      const { user_id, new_password } = params;
+      const targetId = user_id || user.id;
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(targetId, { password: new_password });
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

@@ -11,7 +11,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { name, email, message } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      throw new Error("Invalid JSON body");
+    }
+
+    const { name, email, message } = body;
     if (!name || !email || !message) {
       throw new Error("Missing required fields");
     }
