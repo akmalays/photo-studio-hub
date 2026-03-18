@@ -43,10 +43,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Send email via Lovable API
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) {
-      console.log("No LOVABLE_API_KEY configured, skipping email send");
+    // Send email via Notification API
+    const notificationApiKey = Deno.env.get("NOTIFICATION_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    if (!notificationApiKey) {
+      console.log("No NOTIFICATION_API_KEY configured, skipping email send");
       return new Response(JSON.stringify({ success: true, email_sent: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${lovableApiKey}`,
+          Authorization: `Bearer ${notificationApiKey}`,
         },
         body: JSON.stringify({
           to: notificationEmail,

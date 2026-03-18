@@ -19,8 +19,8 @@ export async function contactHandler(req: Request, res: Response) {
       return res.json({ success: true, email_sent: false, reason: "No notification email configured" });
     }
 
-    if (!env.lovableApiKey) {
-      return res.json({ success: true, email_sent: false, reason: "No LOVABLE_API_KEY configured" });
+    if (!env.notificationApiKey) {
+      return res.json({ success: true, email_sent: false, reason: "No NOTIFICATION_API_KEY configured" });
     }
 
     const projectRef = env.supabaseUrl.replace("https://", "").replace(".supabase.co", "");
@@ -28,7 +28,7 @@ export async function contactHandler(req: Request, res: Response) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${env.lovableApiKey}`,
+        Authorization: `Bearer ${env.notificationApiKey}`,
       },
       body: JSON.stringify({
         to: notificationEmail,

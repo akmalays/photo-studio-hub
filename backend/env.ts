@@ -14,6 +14,6 @@ export const env = {
   supabaseUrl: required("SUPABASE_URL"),
   supabaseServiceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
 
-  lovableApiKey: process.env.LOVABLE_API_KEY,
+  notificationApiKey: process.env.NOTIFICATION_API_KEY || process.env.LOVABLE_API_KEY,
 };
 

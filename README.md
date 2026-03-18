@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# wArna Studio Hub 📸
 
-## Project info
+Sistem manajemen terintegrasi untuk wArna Studio, mencakup Frontend (User Interface) dan Backend (API & Database).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Struktur Proyek
 
-## How can I edit this code?
+Proyek ini menggunakan **NPM Workspaces** untuk memisahkan frontend dan backend secara mandiri:
 
-There are several ways of editing your application.
+- **`frontend/`**: Aplikasi web berbasis React + Vite + Tailwind CSS.
+- **`backend/`**: Server API berbasis Express (Node.js) + Supabase Edge Functions.
 
-**Use Lovable**
+## Persiapan & Instalasi
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Pastikan Anda memiliki Node.js (v20+) dan NPM terinstal. Bun direkomendasikan untuk performa lebih cepat.
 
-Changes made via Lovable will be committed automatically to this repo.
+1.  **Clone Repository**
+    ```sh
+    git clone https://github.com/akmalays/photo-studio-hub.git
+    cd photo-studio-hub
+    ```
 
-**Use your preferred IDE**
+2.  **Konfigurasi Environment**
+    Salin file `.env.example` menjadi `.env` di root folder dan isi variabel yang diperlukan (Supabase URL, Keys, dll).
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3.  **Instalasi Dependencies**
+    Jalankan perintah ini di root folder:
+    ```sh
+    npm install
+    ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Cara Menjalankan (Development)
 
-Follow these steps:
+Anda dapat menjalankan seluruh sistem atau hanya bagian tertentu dari root folder:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **Menjalankan Keduanya (Frontend & Backend)**
+  ```sh
+  npm run dev
+  ```
+- **Hanya Frontend** (Web UI di port 8080)
+  ```sh
+  npm run dev:frontend
+  ```
+- **Hanya Backend** (API di port 8080/Railway default)
+  ```sh
+  npm run dev:backend
+  ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Deployment
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Backend (Railway)
+Proyek ini sudah dikonfigurasi untuk Railway menggunakan `nixpacks.toml`. Cukup hubungkan repo ini ke Railway dan dia akan otomatis mendeteksi script `build` dan `start` di root.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Frontend
+Dapat dideploy ke Vercel, Netlify, atau platform statis lainnya dengan mengarahkan root directory ke folder `frontend/` dan menggunakan build command `npm run build`.
 
-**Edit a file directly in GitHub**
+## Teknologi yang Digunakan
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- **Frontend**: Vite, React, TypeScript, shadcn/ui, Tailwind CSS.
+- **Backend**: Node.js, Express, tsx, Bun.
+- **Database/Auth**: Supabase.
