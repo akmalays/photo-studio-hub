@@ -26,4 +26,4 @@ FOR INSERT
 TO authenticated
 WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-INSERT INTO public.site_settings (key, value) VALUES ('notification_email', 'akmalays@gmail.com');
+INSERT INTO public.site_settings (key, value) VALUES ('notification_email', 'studiofotowarna@gmail.com');
