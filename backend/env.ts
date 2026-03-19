@@ -1,4 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { join } from "path";
+
+// Load from current dir or root dir
+dotenv.config();
+dotenv.config({ path: join(process.cwd(), "..", ".env") });
 
 function required(name: string): string {
   const value = process.env[name];

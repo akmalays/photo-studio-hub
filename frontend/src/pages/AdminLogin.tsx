@@ -27,14 +27,15 @@ const AdminLogin = () => {
     }
 
     // Check admin role
-    const { data: roles } = await supabase
+    const { data: roles, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", data.user.id)
       .eq("role", "admin")
-      .single();
+      .maybeSingle();
 
-    if (!roles) {
+    if (roleError || !roles) {
+      console.error("Role check failed:", roleError, "Roles data:", roles);
       setError("Anda tidak memiliki akses admin.");
       await supabase.auth.signOut();
       setLoading(false);

@@ -8,6 +8,16 @@ import * as services from "./routes/services.js";
 
 const app = express();
 
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  process.exit(1);
+});
+
+console.log("Starting server with env:", JSON.stringify({ port: env.port, env: env.nodeEnv }));
+
 app.use(
   cors({
     origin: env.corsOrigin === "*" ? true : env.corsOrigin.split(",").map((s) => s.trim()),
@@ -35,37 +45,105 @@ app.post("/api/services/photos", services.createPhoto);
 app.delete("/api/services/photos/:id", services.deletePhoto);
 
 // Contact Route
-// Setup Route (Temporary for first admin)
-app.post("/api/setup/admin", async (req, res) => {
+// Cleanup Route (Temporary to clear user roles)
+app.post("/api/setup/cleanup", async (req, res) => {
   try {
-    const { secret, email, password } = req.body;
+    const { secret } = req.body;
     if (secret !== "warna-2026") return res.status(401).json({ error: "Invalid secret" });
     
-    const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email || "admin@fotowarna.com",
-      password: password || "admin123456",
-      email_confirm: true,
-    });
-    
-    let userId = data.user?.id;
-    if (authError?.message.includes("already registered")) {
-      const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-      userId = users.users.find(u => u.email === (email || "admin@fotowarna.com"))?.id;
-    } else if (authError) throw authError;
+    const { error } = await supabaseAdmin.from("user_roles").delete().not("role", "is", null);
+    if (error) throw error;
 
-    if (!userId) throw new Error("User ID not found");
-
-    await supabaseAdmin.from("user_roles").upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id" });
-    await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: "Admin Studio" }, { onConflict: "id" });
-
-    res.json({ success: true, message: "Admin created/updated successfully" });
+    res.json({ success: true, message: "user_roles table cleared successfully" });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(env.port, () => {
+// Setup Route (Temporary for first admin)
+app.post("/api/setup/admin", async (req, res) => {
+  try {
+    const { secret, email, password, full_name } = req.body;
+    if (secret !== "warna-2026") return res.status(401).json({ error: "Invalid secret" });
+    
+    const targetEmail = email || "admin@warnastudio.com";
+    const targetPassword = password || "admin123456";
+    const targetName = full_name || "Admin Studio";
+
+    const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: targetEmail,
+      password: targetPassword,
+      email_confirm: true,
+    });
+    
+    let userId = data.user?.id;
+    if (authError) {
+      console.log("Auth Error during setup:", JSON.stringify(authError));
+      // Broadened check for "registered" or "already exist" or status 422
+      const isRegistered = authError.message.includes("registered") || 
+                          authError.message.includes("exists") || 
+                          authError.status === 422;
+      
+      if (isRegistered) {
+        const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        if (listError) throw listError;
+        userId = users.users.find(u => u.email?.toLowerCase() === targetEmail.toLowerCase())?.id;
+      } else {
+        throw authError;
+      }
+    }
+
+    console.log("Setup found/created userId:", userId);
+
+    if (!userId) throw new Error("User ID not found");
+
+    // Assign Role & Create Profile
+    const { error: roleErr } = await supabaseAdmin.from("user_roles").upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
+    if (roleErr) {
+      console.error("Role Upsert Error:", roleErr);
+      throw roleErr;
+    }
+
+    const { error: profileErr } = await supabaseAdmin.from("profiles").upsert({ id: userId, full_name: targetName }, { onConflict: "id" });
+    if (profileErr) {
+      console.error("Profile Upsert Error:", profileErr);
+      throw profileErr;
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Admin created/updated successfully",
+      user: {
+        id: userId,
+        email: targetEmail,
+        full_name: targetName,
+        role: "admin"
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const server = app.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`API listening on :${env.port}`);
 });
+
+server.on("error", (err) => {
+  console.error("Server error:", err);
+});
+
+server.on("close", () => {
+  console.log("Server closed");
+});
+
+// Force process to stay alive for debugging
+setInterval(() => {
+  if (server.listening) {
+    // heart beat
+  } else {
+    console.log("Server is no longer listening");
+  }
+}, 5000);
 
