@@ -53,6 +53,7 @@ app.delete("/api/services/photos/:id", services.deletePhoto);
 // Contact Routes
 app.post("/api/contact", contact.contactHandler);
 app.get("/api/contact/messages", contact.getMessages);
+app.delete("/api/contact/messages/:id", contact.deleteMessage);
 // Cleanup Route (Temporary to clear user roles)
 app.post("/api/setup/cleanup", async (req, res) => {
   try {

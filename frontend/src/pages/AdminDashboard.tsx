@@ -81,6 +81,7 @@ const AdminDashboard = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [fetchingMessages, setFetchingMessages] = useState(false);
+  const [expandMessages, setExpandMessages] = useState(false);
   const [lastReadAt, setLastReadAt] = useState<string>(
     localStorage.getItem("admin_last_read_at") || new Date(0).toISOString()
   );
@@ -125,6 +126,22 @@ const AdminDashboard = () => {
       toast.error(err.message);
     }
   }, [apiUrl]);
+
+  const handleDeleteMessage = async (id: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetch(`${apiUrl}/api/contact/messages/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error("Gagal menghapus pesan");
+      setMessages(prev => prev.filter(m => m.id !== id));
+      toast.success("Pesan dihapus");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -459,23 +476,31 @@ const AdminDashboard = () => {
 
               {/* Notification Popup */}
               {showNotifications && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-[300px] border border-border bg-card shadow-xl sm:w-[400px]">
+                <div className="fixed left-1/2 -translate-x-1/2 top-[70px] w-[92vw] max-w-[420px] z-50 border border-border bg-card shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:translate-x-0 sm:w-[380px]">
                   <div className="flex items-center justify-between border-b border-border p-4">
                     <h3 className="font-display text-sm font-semibold text-foreground">Pesan Terbaru</h3>
                     <button onClick={() => setShowNotifications(false)} className="text-muted-foreground hover:text-foreground">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="max-h-[400px] overflow-y-auto">
+                  <div>
                     {fetchingMessages && messages.length === 0 ? (
                       <div className="p-8 text-center font-body text-xs text-muted-foreground">Memuat pesan...</div>
                     ) : messages.length === 0 ? (
                       <div className="p-8 text-center font-body text-xs text-muted-foreground">Tidak ada pesan masuk.</div>
                     ) : (
                       <div className="divide-y divide-border">
-                        {messages.map((msg) => (
-                          <div key={msg.id} className="p-4 hover:bg-muted/50 transition-colors">
-                            <div className="mb-1 flex items-center justify-between">
+                        {(expandMessages ? messages : messages.slice(0, 3)).map((msg) => (
+                          <div key={msg.id} className="group relative p-4 hover:bg-muted/50 transition-colors">
+                            {/* Delete icon */}
+                            <button
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="absolute right-3 top-3 hidden h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive group-hover:flex"
+                              title="Hapus pesan"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <div className="mb-1 flex items-center justify-between pr-6">
                               <span className="font-display text-xs font-semibold text-foreground uppercase tracking-wider">{msg.name}</span>
                               <span className="text-[10px] text-muted-foreground">
                                 {new Date(msg.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short' })}
@@ -483,9 +508,9 @@ const AdminDashboard = () => {
                             </div>
                             <div className="mb-2 flex items-center gap-1 text-[10px] text-primary">
                               <Mail className="h-3 w-3" />
-                              <span>{msg.email}</span>
+                              <span className="truncate">{msg.email}</span>
                             </div>
-                            <p className="font-body text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                            <p className="font-body text-xs text-muted-foreground line-clamp-3 leading-relaxed break-words">
                               {msg.message}
                             </p>
                           </div>
@@ -493,9 +518,23 @@ const AdminDashboard = () => {
                       </div>
                     )}
                   </div>
-                  {messages.length > 0 && (
+                  {messages.length > 3 && (
                     <div className="border-t border-border p-3 text-center">
-                      <p className="font-body text-[10px] text-muted-foreground italic">Menampilkan {messages.length} pesan terbaru</p>
+                      <button
+                        onClick={() => setExpandMessages(e => !e)}
+                        className="flex w-full items-center justify-center gap-1 font-body text-[11px] text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {expandMessages ? (
+                          <><ChevronUp className="h-3.5 w-3.5" /> Tampilkan lebih sedikit</>
+                        ) : (
+                          <><ChevronDown className="h-3.5 w-3.5" /> +{messages.length - 3} pesan lainnya</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  {messages.length > 0 && messages.length <= 3 && (
+                    <div className="border-t border-border p-3 text-center">
+                      <p className="font-body text-[10px] text-muted-foreground italic">Menampilkan {messages.length} pesan</p>
                     </div>
                   )}
                 </div>

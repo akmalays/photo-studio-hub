@@ -43,3 +43,17 @@ export async function getMessages(req: Request, res: Response) {
   }
 }
 
+export async function deleteMessage(req: Request, res: Response) {
+  try {
+    await requireAdmin(req);
+    const { id } = req.params;
+    if (!id) throw new Error("Missing message ID");
+    
+    const { error } = await supabaseAdmin.from("contact_messages").delete().eq("id", id);
+    if (error) throw error;
+    
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(error.message === "Unauthorized" || error.message === "Not an admin" ? 403 : 400).json({ error: error?.message ?? "Unknown error" });
+  }
+}
