@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp } from "lucide-react";
+import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface PortfolioItem {
@@ -24,6 +24,14 @@ interface ServicePhoto {
   category_id: string;
   image_url: string;
   display_order: number;
+}
+
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  created_at: string;
 }
 
 const AdminDashboard = () => {
@@ -50,6 +58,18 @@ const AdminDashboard = () => {
   const [uploadingService, setUploadingService] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const [activeSection, setActiveSection] = useState<"portfolio" | "services">("portfolio");
+  
+  // Notification states
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [fetchingMessages, setFetchingMessages] = useState(false);
+  const [lastReadAt, setLastReadAt] = useState<string>(
+    localStorage.getItem("admin_last_read_at") || new Date(0).toISOString()
+  );
+
+  const unreadCount = messages.filter(
+    (msg) => new Date(msg.created_at) > new Date(lastReadAt)
+  ).length;
 
   const fetchItems = useCallback(async () => {
     try {
@@ -80,6 +100,26 @@ const AdminDashboard = () => {
     }
   }, [apiUrl]);
 
+  const fetchMessages = useCallback(async () => {
+    try {
+      setFetchingMessages(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`${apiUrl}/api/contact/messages`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error("Gagal mengambil pesan");
+      const data = await response.json();
+      console.log("Fetched messages:", data.length);
+      setMessages(data || []);
+    } catch (err: any) {
+      console.error("Fetch messages error:", err);
+    } finally {
+      setFetchingMessages(false);
+    }
+  }, [apiUrl]);
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -101,9 +141,34 @@ const AdminDashboard = () => {
 
       fetchItems();
       fetchServices();
+      fetchMessages();
+      
+      // Poll for messages as backup
+      const interval = setInterval(fetchMessages, 60000);
+
+      // Real-time subscription
+      console.log("Subscribing to contact_messages real-time...");
+      const channel = supabase
+        .channel("contact_messages_changes")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "contact_messages" },
+          (payload) => {
+            console.log("New contact message received via Realtime:", payload);
+            fetchMessages();
+          }
+        )
+        .subscribe((status) => {
+          console.log("Real-time subscription status:", status);
+        });
+
+      return () => {
+        clearInterval(interval);
+        supabase.removeChannel(channel);
+      };
     };
     checkAuth();
-  }, [navigate, fetchItems, fetchServices]);
+  }, [navigate, fetchItems, fetchServices, fetchMessages]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -251,6 +316,76 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <span className="hidden font-body text-sm text-muted-foreground sm:inline">Halo, {userName}</span>
             <a href="/" className="font-body text-xs text-muted-foreground transition-colors hover:text-primary sm:text-sm">Lihat Website</a>
+            
+            {/* Notification Bell */}
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  fetchMessages(); // Refresh on click
+                  if (!showNotifications) {
+                    const now = new Date().toISOString();
+                    console.log("Setting lastReadAt to:", now);
+                    setLastReadAt(now);
+                    localStorage.setItem("admin_last_read_at", now);
+                  }
+                  setShowNotifications(!showNotifications);
+                }}
+                className={`flex h-9 w-9 items-center justify-center border border-border transition-colors hover:border-primary hover:text-primary ${showNotifications ? "border-primary text-primary" : "text-muted-foreground"}`}
+                title="Notifikasi"
+              >
+                <Bell className={`h-4 w-4 ${unreadCount > 0 ? "animate-bounce" : ""}`} />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-pulse">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popup */}
+              {showNotifications && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-[300px] border border-border bg-card shadow-xl sm:w-[400px]">
+                  <div className="flex items-center justify-between border-b border-border p-4">
+                    <h3 className="font-display text-sm font-semibold text-foreground">Pesan Terbaru</h3>
+                    <button onClick={() => setShowNotifications(false)} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {fetchingMessages && messages.length === 0 ? (
+                      <div className="p-8 text-center font-body text-xs text-muted-foreground">Memuat pesan...</div>
+                    ) : messages.length === 0 ? (
+                      <div className="p-8 text-center font-body text-xs text-muted-foreground">Tidak ada pesan masuk.</div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {messages.map((msg) => (
+                          <div key={msg.id} className="p-4 hover:bg-muted/50 transition-colors">
+                            <div className="mb-1 flex items-center justify-between">
+                              <span className="font-display text-xs font-semibold text-foreground uppercase tracking-wider">{msg.name}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(msg.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short' })}
+                              </span>
+                            </div>
+                            <div className="mb-2 flex items-center gap-1 text-[10px] text-primary">
+                              <Mail className="h-3 w-3" />
+                              <span>{msg.email}</span>
+                            </div>
+                            <p className="font-body text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                              {msg.message}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {messages.length > 0 && (
+                    <div className="border-t border-border p-3 text-center">
+                      <p className="font-body text-[10px] text-muted-foreground italic">Menampilkan {messages.length} pesan terbaru</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button onClick={() => navigate("/admin/settings")} className="flex items-center gap-2 border border-border px-3 py-2 font-body text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary sm:px-4 sm:text-sm">
               <Settings className="h-4 w-4" /><span className="hidden sm:inline">Pengaturan</span>
             </button>

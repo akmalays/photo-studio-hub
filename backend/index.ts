@@ -5,6 +5,7 @@ import { supabaseAdmin } from "./supabaseAdmin.js";
 import { adminUsersHandler } from "./routes/adminUsers.js";
 import * as portfolio from "./routes/portfolio.js";
 import * as services from "./routes/services.js";
+import * as contact from "./routes/contact.js";
 
 const app = express();
 
@@ -44,7 +45,9 @@ app.get("/api/services/photos", services.getPhotos);
 app.post("/api/services/photos", services.createPhoto);
 app.delete("/api/services/photos/:id", services.deletePhoto);
 
-// Contact Route
+// Contact Routes
+app.post("/api/contact", contact.contactHandler);
+app.get("/api/contact/messages", contact.getMessages);
 // Cleanup Route (Temporary to clear user roles)
 app.post("/api/setup/cleanup", async (req, res) => {
   try {

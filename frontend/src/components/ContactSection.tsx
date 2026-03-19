@@ -1,36 +1,40 @@
 import {Mail, MapPin, Send} from "lucide-react";
 import {useState} from "react";
 
-import {supabase} from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({name: "", email: "", message: ""});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     try {
-      const {error} = await supabase.from("contact_messages").insert({
-        name: formData.name,
-        email: formData.email,
-        message: formData.message,
+      const res = await fetch(`${apiUrl}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        }),
       });
-      if (error) throw error;
-
-      // Send email notification (fire and forget)
-      supabase.functions
-        .invoke("send-contact-notification", {
-          body: {name: formData.name, email: formData.email, message: formData.message},
-        })
-        .catch(console.error);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Gagal mengirim pesan. Silakan coba lagi.");
 
       setSent(true);
       setFormData({name: "", email: "", message: ""});
       setTimeout(() => setSent(false), 4000);
-    } catch {
-      alert("Gagal mengirim pesan. Silakan coba lagi.");
+      if (data?.email_sent === false) {
+        toast.success("Pesan terkirim! (Email notifikasi belum terkirim)");
+      } else {
+        toast.success("Pesan berhasil dikirim!");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal mengirim pesan. Silakan coba lagi.");
     } finally {
       setSending(false);
     }
