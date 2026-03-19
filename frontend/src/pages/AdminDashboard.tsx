@@ -1,15 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X } from "lucide-react";
+import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X, Edit, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-interface PortfolioItem {
+interface PortfolioCategory {
   id: string;
-  title: string;
-  category: string;
-  image_url: string;
+  name: string;
+  description: string;
   display_order: number;
+}
+
+interface PortfolioPhoto {
+  id: string;
+  category_id: string;
+  image_url: string;
+  title: string;
+  display_order: number;
+  created_at: string;
 }
 
 interface ServiceCategory {
@@ -35,14 +43,7 @@ interface ContactMessage {
 }
 
 const AdminDashboard = () => {
-  const [items, setItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
 
@@ -59,6 +60,23 @@ const AdminDashboard = () => {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const [activeSection, setActiveSection] = useState<"portfolio" | "services">("portfolio");
   
+  // New Portfolio states
+  const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
+  const [portfolioPhotos, setPortfolioPhotos] = useState<PortfolioPhoto[]>([]);
+  const [showPortfolioCategoryForm, setShowPortfolioCategoryForm] = useState(false);
+  const [portfolioCatName, setPortfolioCatName] = useState("");
+  const [portfolioCatDesc, setPortfolioCatDesc] = useState("");
+  const [expandedPortfolioCat, setExpandedPortfolioCat] = useState<string | null>(null);
+  const [portfolioFiles, setPortfolioFiles] = useState<File[]>([]);
+  const [portfolioPreviews, setPortfolioPreviews] = useState<string[]>([]);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+  const [editingPhoto, setEditingPhoto] = useState<PortfolioPhoto | null>(null);
+  const [editPhotoTitle, setEditPhotoTitle] = useState("");
+
+  const [editingCategory, setEditingCategory] = useState<PortfolioCategory | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatDesc, setEditCatDesc] = useState("");
+  
   // Notification states
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -67,16 +85,24 @@ const AdminDashboard = () => {
     localStorage.getItem("admin_last_read_at") || new Date(0).toISOString()
   );
 
+  // Bulk Upload state
+  const [serviceFiles, setServiceFiles] = useState<File[]>([]);
+  const [servicePreviews, setServicePreviews] = useState<string[]>([]);
+
   const unreadCount = messages.filter(
     (msg) => new Date(msg.created_at) > new Date(lastReadAt)
   ).length;
 
   const fetchItems = useCallback(async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/portfolio`);
-      if (!response.ok) throw new Error("Gagal mengambil data portfolio");
-      const data = await response.json();
-      setItems(data || []);
+      const [catRes, photoRes] = await Promise.all([
+        fetch(`${apiUrl}/api/portfolio/categories`),
+        fetch(`${apiUrl}/api/portfolio/photos`),
+      ]);
+      if (catRes.ok && photoRes.ok) {
+        setPortfolioCategories(await catRes.json());
+        setPortfolioPhotos(await photoRes.json());
+      }
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -170,51 +196,123 @@ const AdminDashboard = () => {
     checkAuth();
   }, [navigate, fetchItems, fetchServices, fetchMessages]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) { setFile(f); setPreview(URL.createObjectURL(f)); }
-  };
-
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAddPortfolioCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
-    setUploading(true);
-
-    const ext = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage.from("portfolio").upload(fileName, file);
-    if (uploadError) { toast.error("Gagal upload gambar"); setUploading(false); return; }
-
-    const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(fileName);
-
     try {
-      const response = await fetch(`${apiUrl}/api/portfolio`, {
+      const response = await fetch(`${apiUrl}/api/portfolio/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title, category, image_url: urlData.publicUrl, display_order: items.length,
-        }),
+        body: JSON.stringify({ name: portfolioCatName, description: portfolioCatDesc, display_order: portfolioCategories.length }),
       });
-      if (!response.ok) throw new Error("Gagal menyimpan ke database");
-      
-      toast.success("Portfolio berhasil ditambahkan!");
-      setTitle(""); setCategory(""); setFile(null); setPreview(null); setShowForm(false);
+      if (!response.ok) throw new Error("Gagal menambah kategori");
+      toast.success("Kategori portfolio ditambahkan!");
+      setPortfolioCatName(""); setPortfolioCatDesc(""); setShowPortfolioCategoryForm(false);
       fetchItems();
     } catch (err: any) {
       toast.error(err.message);
-    } finally {
-      setUploading(false);
     }
   };
 
-  const handleDelete = async (item: PortfolioItem) => {
-    if (!confirm("Hapus item ini?")) return;
-    const urlParts = item.image_url.split("/");
-    const fileName = urlParts[urlParts.length - 1];
-    await supabase.storage.from("portfolio").remove([fileName]);
-    const { error } = await fetch(`${apiUrl}/api/portfolio/${item.id}`, { method: "DELETE" }).then(res => res.json());
-    if (error) { toast.error("Gagal menghapus"); } else { toast.success("Item dihapus"); fetchItems(); }
+  const handleEditPortfolioCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    try {
+      const response = await fetch(`${apiUrl}/api/portfolio/categories/${editingCategory.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editCatName, description: editCatDesc }),
+      });
+      if (!response.ok) throw new Error("Gagal mengedit kategori");
+      toast.success("Kategori berhasil diedit!");
+      setEditingCategory(null);
+      fetchItems();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeletePortfolioCategory = async (id: string) => {
+    if (!confirm("Hapus kategori ini beserta semua fotonya?")) return;
+    try {
+      const response = await fetch(`${apiUrl}/api/portfolio/categories/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Gagal menghapus");
+      toast.success("Kategori dihapus");
+      fetchItems();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handlePortfolioFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const validFiles: File[] = [];
+    const previews: string[] = [];
+
+    selectedFiles.forEach(f => {
+      if (f.size > 2 * 1024 * 1024) {
+        toast.error(`File ${f.name} melebihi 2 MB`);
+      } else {
+        validFiles.push(f);
+        previews.push(URL.createObjectURL(f));
+      }
+    });
+
+    setPortfolioFiles(prev => [...prev, ...validFiles]);
+    setPortfolioPreviews(prev => [...prev, ...previews]);
+  };
+
+  const handleAddPortfolioPhotos = async (categoryId: string) => {
+    if (portfolioFiles.length === 0) return;
+    setUploadingPortfolio(true);
+
+    let successCount = 0;
+    const catPhotos = portfolioPhotos.filter((p) => p.category_id === categoryId);
+    let currentOrder = catPhotos.length;
+
+    for (const file of portfolioFiles) {
+      try {
+        const ext = file.name.split(".").pop();
+        const fileName = `portfolio_${Date.now()}_${successCount}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("portfolio").upload(fileName, file);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(fileName);
+        const response = await fetch(`${apiUrl}/api/portfolio/photos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category_id: categoryId, image_url: urlData.publicUrl, title: "", display_order: currentOrder++,
+          }),
+        });
+        if (!response.ok) throw new Error("Gagal simpan ke DB");
+        successCount++;
+      } catch (err: any) {
+        toast.error(`Gagal upload ${file.name}: ${err.message}`);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} foto berhasil ditambahkan!`);
+      setPortfolioFiles([]); setPortfolioPreviews([]);
+      fetchItems();
+    }
+    setUploadingPortfolio(false);
+  };
+
+  const handleDeletePortfolioPhoto = async (photo: PortfolioPhoto) => {
+    if (!confirm("Hapus foto ini?")) return;
+    try {
+      const urlParts = photo.image_url.split("/");
+      const fileName = urlParts[urlParts.length - 1];
+      await supabase.storage.from("portfolio").remove([fileName]);
+
+      const response = await fetch(`${apiUrl}/api/portfolio/photos/${photo.id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Gagal hapus dari DB");
+      toast.success("Foto dihapus");
+      fetchItems();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -250,42 +348,60 @@ const AdminDashboard = () => {
     if (error) { toast.error("Gagal menghapus"); } else { toast.success("Kategori dihapus"); fetchServices(); }
   };
 
-  const handleServiceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) { setServiceFile(f); setServicePreview(URL.createObjectURL(f)); }
+  const handleServiceFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    const validFiles: File[] = [];
+    const previews: string[] = [];
+
+    selectedFiles.forEach(f => {
+      if (f.size > 2 * 1024 * 1024) {
+        toast.error(`File ${f.name} melebihi 2 MB`);
+      } else {
+        validFiles.push(f);
+        previews.push(URL.createObjectURL(f));
+      }
+    });
+
+    setServiceFiles(prev => [...prev, ...validFiles]);
+    setServicePreviews(prev => [...prev, ...previews]);
   };
 
-  const handleAddServicePhoto = async (categoryId: string) => {
-    if (!serviceFile) return;
+  const handleAddServicePhotos = async (categoryId: string) => {
+    if (serviceFiles.length === 0) return;
     setUploadingService(true);
 
-    const ext = serviceFile.name.split(".").pop();
-    const fileName = `service_${Date.now()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage.from("portfolio").upload(fileName, serviceFile);
-    if (uploadError) { toast.error("Gagal upload"); setUploadingService(false); return; }
-
-    const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(fileName);
+    let successCount = 0;
     const catPhotos = servicePhotos.filter((p) => p.category_id === categoryId);
+    let currentOrder = catPhotos.length;
 
-    try {
-      const response = await fetch(`${apiUrl}/api/services/photos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category_id: categoryId, image_url: urlData.publicUrl, display_order: catPhotos.length,
-        }),
-      });
-      if (!response.ok) throw new Error("Gagal menyimpan foto");
+    for (const file of serviceFiles) {
+      try {
+        const ext = file.name.split(".").pop();
+        const fileName = `service_${Date.now()}_${successCount}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("portfolio").upload(fileName, file);
+        if (uploadError) throw uploadError;
 
-      toast.success("Foto ditambahkan!");
-      setServiceFile(null); setServicePreview(null);
-      fetchServices();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setUploadingService(false);
+        const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(fileName);
+        const response = await fetch(`${apiUrl}/api/services/photos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category_id: categoryId, image_url: urlData.publicUrl, display_order: currentOrder++,
+          }),
+        });
+        if (!response.ok) throw new Error("Gagal simpan ke DB");
+        successCount++;
+      } catch (err: any) {
+        toast.error(`Gagal upload ${file.name}: ${err.message}`);
+      }
     }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} foto berhasil ditambahkan!`);
+      setServiceFiles([]); setServicePreviews([]);
+      fetchServices();
+    }
+    setUploadingService(false);
   };
 
   const handleDeleteServicePhoto = async (photo: ServicePhoto) => {
@@ -423,73 +539,177 @@ const AdminDashboard = () => {
         {activeSection === "portfolio" && (
           <>
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="font-display text-xl text-foreground sm:text-2xl">Portfolio Items</h2>
+              <h2 className="font-display text-xl text-foreground sm:text-2xl">Portfolio Categories</h2>
               <button
-                onClick={() => setShowForm(!showForm)}
+                onClick={() => setShowPortfolioCategoryForm(!showPortfolioCategoryForm)}
                 className="flex items-center gap-2 border border-primary bg-primary px-4 py-2 font-body text-xs uppercase tracking-wider text-primary-foreground transition-all duration-300 hover:bg-transparent hover:text-primary sm:text-sm"
               >
-                <Plus className="h-4 w-4" /> Tambah
+                <Plus className="h-4 w-4" /> Tambah Kategori
               </button>
             </div>
 
-            {showForm && (
-              <form onSubmit={handleAdd} className="mb-8 border border-border bg-card p-4 sm:p-6">
-                <h3 className="mb-4 font-display text-lg text-foreground">Tambah Portfolio Baru</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
+            {showPortfolioCategoryForm && (
+              <form onSubmit={handleAddPortfolioCategory} className="mb-8 border border-border bg-card p-4 sm:p-6">
+                <h3 className="mb-4 font-display text-lg text-foreground">Tambah Kategori Portfolio Baru</h3>
+                <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Judul</label>
-                    <input required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary" />
+                    <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Nama Kategori</label>
+                    <input required value={portfolioCatName} onChange={(e) => setPortfolioCatName(e.target.value)} placeholder="Contoh: Pernikahan, Studio, Produk" className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary" />
                   </div>
                   <div>
-                    <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Kategori</label>
-                    <input required value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Contoh: Pernikahan, Lanskap, Fashion" className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary" />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Gambar</label>
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-                    <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-6 py-4 transition-colors hover:border-primary">
-                      <Image className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-body text-sm text-muted-foreground">{file ? file.name : "Pilih gambar..."}</span>
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </label>
-                    {preview && <img src={preview} alt="Preview" className="h-20 w-20 object-cover" />}
+                    <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Deskripsi</label>
+                    <textarea value={portfolioCatDesc} onChange={(e) => setPortfolioCatDesc(e.target.value)} rows={3} placeholder="Jelaskan kategori ini..." className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary" />
                   </div>
                 </div>
                 <div className="mt-6 flex gap-3">
-                  <button type="submit" disabled={uploading || !file} className="border border-primary bg-primary px-6 py-2 font-body text-sm uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50">
-                    {uploading ? "Mengupload..." : "Simpan"}
-                  </button>
-                  <button type="button" onClick={() => { setShowForm(false); setFile(null); setPreview(null); }} className="border border-border px-6 py-2 font-body text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground">Batal</button>
+                  <button type="submit" className="border border-primary bg-primary px-6 py-2 font-body text-sm uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary">Simpan</button>
+                  <button type="button" onClick={() => setShowPortfolioCategoryForm(false)} className="border border-border px-6 py-2 font-body text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground">Batal</button>
                 </div>
               </form>
             )}
 
             {loading ? (
               <p className="font-body text-muted-foreground">Memuat...</p>
-            ) : items.length === 0 ? (
+            ) : portfolioCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center border border-dashed border-border py-16">
                 <Image className="mb-4 h-12 w-12 text-muted-foreground/40" />
-                <p className="font-body text-muted-foreground">Belum ada portfolio. Klik "Tambah" untuk mulai.</p>
+                <p className="font-body text-muted-foreground">Belum ada kategori portfolio. Klik "Tambah Kategori" untuk mulai.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {items.map((item) => (
-                  <div key={item.id} className="group relative border border-border bg-card overflow-hidden">
-                    <div className="aspect-[4/3] overflow-hidden">
-                      <img src={item.image_url} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    </div>
-                    <div className="flex items-center justify-between p-4">
-                      <div>
-                        <p className="font-display text-foreground">{item.title}</p>
-                        <p className="font-body text-xs text-muted-foreground">{item.category}</p>
+              <div className="space-y-4">
+                {portfolioCategories.map((cat) => {
+                  const catPhotos = portfolioPhotos.filter((p) => p.category_id === cat.id);
+                  const isExpanded = expandedPortfolioCat === cat.id;
+
+                  return (
+                    <div key={cat.id} className="border border-border bg-card overflow-hidden">
+                      {/* Category header */}
+                      <div
+                        className="flex cursor-pointer items-center justify-between p-4 sm:p-5"
+                        onClick={() => setExpandedPortfolioCat(isExpanded ? null : cat.id)}
+                      >
+                        <div>
+                          <h3 className="font-display text-lg text-foreground">{cat.name}</h3>
+                          {cat.description && <p className="mt-1 font-body text-xs text-muted-foreground line-clamp-1">{cat.description}</p>}
+                          <p className="mt-1 font-body text-xs text-primary">{catPhotos.length} foto</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCategory(cat);
+                              setEditCatName(cat.name);
+                              setEditCatDesc(cat.description || "");
+                            }}
+                            className="flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-primary"
+                            title="Edit Kategori"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeletePortfolioCategory(cat.id); }}
+                            className="flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
+                            title="Hapus Kategori"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          {isExpanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                        </div>
                       </div>
-                      <button onClick={() => handleDelete(item)} className="flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-destructive" title="Hapus">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+
+                      {/* Edit Form */}
+                      {editingCategory?.id === cat.id && (
+                        <form onSubmit={handleEditPortfolioCategory} className="border-t border-border bg-muted/20 p-4 sm:p-5">
+                          <h4 className="mb-3 font-display text-sm">Edit Kategori</h4>
+                          <div className="space-y-3">
+                            <input required value={editCatName} onChange={(e) => setEditCatName(e.target.value)} placeholder="Nama Kategori" className="w-full border border-border bg-transparent px-3 py-2 font-body text-sm text-foreground outline-none focus:border-primary" />
+                            <textarea value={editCatDesc} onChange={(e) => setEditCatDesc(e.target.value)} rows={2} placeholder="Deskripsi (Opsional)" className="w-full border border-border bg-transparent px-3 py-2 font-body text-sm text-foreground outline-none focus:border-primary" />
+                            <div className="flex gap-2">
+                              <button type="submit" className="bg-primary px-4 py-1.5 font-body text-xs text-primary-foreground">Simpan</button>
+                              <button type="button" onClick={() => setEditingCategory(null)} className="border border-border px-4 py-1.5 font-body text-xs text-muted-foreground hover:text-foreground">Batal</button>
+                            </div>
+                          </div>
+                        </form>
+                      )}
+
+                      {/* Expanded content */}
+                      {isExpanded && (
+                        <div className="border-t border-border p-4 sm:p-5">
+                          {/* Bulk upload photos */}
+                          <div className="mb-6">
+                            <label className="mb-2 block font-body text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Upload Foto Portfolio </label>
+                            <div className="flex flex-col gap-4">
+                              <div className="flex flex-wrap gap-3 sm:items-end">
+                                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-6 py-4 transition-colors hover:border-primary bg-muted/30">
+                                  <Plus className="h-5 w-5 text-primary" />
+                                  <span className="font-body text-sm text-foreground">Pilih foto</span>
+                                  <input type="file" multiple accept="image/*" onChange={handlePortfolioFilesChange} className="hidden" />
+                                </label>
+                                
+                                {portfolioFiles.length > 0 && (
+                                  <button
+                                    type="button"
+                                    disabled={uploadingPortfolio}
+                                    onClick={() => handleAddPortfolioPhotos(cat.id)}
+                                    className="flex items-center gap-2 border border-primary bg-primary px-8 py-4 font-body text-xs uppercase tracking-widest text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
+                                  >
+                                    {uploadingPortfolio ? <Loader2 className="h-5 w-5 animate-spin" /> : "Mulai Upload"}
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Previews */}
+                              {portfolioPreviews.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {portfolioPreviews.map((p, idx) => (
+                                    <div key={idx} className="relative h-16 w-16 overflow-hidden border border-border group">
+                                      <img src={p} alt="" className="h-full w-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <X className="h-4 w-4 text-white cursor-pointer" onClick={() => {
+                                          const newFiles = [...portfolioFiles];
+                                          const newPreviews = [...portfolioPreviews];
+                                          newFiles.splice(idx, 1);
+                                          newPreviews.splice(idx, 1);
+                                          setPortfolioFiles(newFiles);
+                                          setPortfolioPreviews(newPreviews);
+                                        }} />
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <button 
+                                    onClick={() => { setPortfolioFiles([]); setPortfolioPreviews([]); }}
+                                    className="h-16 px-4 font-body text-[10px] uppercase text-muted-foreground hover:text-destructive border border-dashed border-border"
+                                  >
+                                    Bersihkan
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Photos grid */}
+                          {catPhotos.length === 0 ? (
+                            <p className="font-body text-sm text-muted-foreground">Belum ada foto di kategori ini.</p>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                              {catPhotos.map((photo) => (
+                                <div key={photo.id} className="group relative overflow-hidden border border-border bg-muted/10 flex items-center justify-center p-1">
+                                  <img src={photo.image_url} alt="" className="max-h-[200px] w-full object-contain" />
+                                  <button
+                                    onClick={() => handleDeletePortfolioPhoto(photo)}
+                                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive shadow-sm"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -566,22 +786,56 @@ const AdminDashboard = () => {
                       {/* Expanded content */}
                       {isExpanded && (
                         <div className="border-t border-border p-4 sm:p-5">
-                          {/* Upload photo */}
-                          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-                            <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-3 transition-colors hover:border-primary">
-                              <Image className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-body text-sm text-muted-foreground">{serviceFile ? serviceFile.name : "Pilih foto..."}</span>
-                              <input type="file" accept="image/*" onChange={handleServiceFileChange} className="hidden" />
-                            </label>
-                            {servicePreview && <img src={servicePreview} alt="Preview" className="h-16 w-16 object-cover" />}
-                            <button
-                              type="button"
-                              disabled={!serviceFile || uploadingService}
-                              onClick={() => handleAddServicePhoto(cat.id)}
-                              className="border border-primary bg-primary px-4 py-2 font-body text-xs uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
-                            >
-                              {uploadingService ? "Uploading..." : "Upload Foto"}
-                            </button>
+                          {/* Bulk upload photos */}
+                          <div className="mb-6">
+                            <label className="mb-2 block font-body text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Upload Foto Baru </label>
+                            <div className="flex flex-col gap-4">
+                              <div className="flex flex-wrap gap-3 sm:items-end">
+                                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-6 py-4 transition-colors hover:border-primary bg-muted/30">
+                                  <Plus className="h-5 w-5 text-primary" />
+                                  <span className="font-body text-sm text-foreground">Pilih foto</span>
+                                  <input type="file" multiple accept="image/*" onChange={handleServiceFilesChange} className="hidden" />
+                                </label>
+                                
+                                {serviceFiles.length > 0 && (
+                                  <button
+                                    type="button"
+                                    disabled={uploadingService}
+                                    onClick={() => handleAddServicePhotos(cat.id)}
+                                    className="flex items-center gap-2 border border-primary bg-primary px-8 py-4 font-body text-xs uppercase tracking-widest text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
+                                  >
+                                    {uploadingService ? <Loader2 className="h-5 w-5 animate-spin" /> : "Mulai Upload"}
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Previews */}
+                              {servicePreviews.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {servicePreviews.map((p, idx) => (
+                                    <div key={idx} className="relative h-16 w-16 overflow-hidden border border-border group">
+                                      <img src={p} alt="" className="h-full w-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <X className="h-4 w-4 text-white cursor-pointer" onClick={() => {
+                                          const newFiles = [...serviceFiles];
+                                          const newPreviews = [...servicePreviews];
+                                          newFiles.splice(idx, 1);
+                                          newPreviews.splice(idx, 1);
+                                          setServiceFiles(newFiles);
+                                          setServicePreviews(newPreviews);
+                                        }} />
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <button 
+                                    onClick={() => { setServiceFiles([]); setServicePreviews([]); }}
+                                    className="h-16 px-4 font-body text-[10px] uppercase text-muted-foreground hover:text-destructive border border-dashed border-border"
+                                  >
+                                    Bersihkan
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Photos grid */}
@@ -590,11 +844,11 @@ const AdminDashboard = () => {
                           ) : (
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                               {catPhotos.map((photo) => (
-                                <div key={photo.id} className="group relative aspect-square overflow-hidden border border-border">
-                                  <img src={photo.image_url} alt="" className="h-full w-full object-cover" />
+                                <div key={photo.id} className="group relative overflow-hidden border border-border bg-muted/10 flex items-center justify-center p-1">
+                                  <img src={photo.image_url} alt="" className="max-h-[200px] w-full object-contain" />
                                   <button
                                     onClick={() => handleDeleteServicePhoto(photo)}
-                                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive shadow-sm"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>

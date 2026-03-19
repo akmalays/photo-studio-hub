@@ -1,16 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Save, UserPlus, Trash2, Shield, ShieldOff, ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
+import { LogOut, Save, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-
-interface UserItem {
-  id: string;
-  email: string;
-  full_name: string;
-  roles: string[];
-  created_at: string;
-}
 
 const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; full_name: string } | null>(null);
@@ -19,40 +11,7 @@ const AdminSettings = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [users, setUsers] = useState<UserItem[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserName, setNewUserName] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
-  const [creating, setCreating] = useState(false);
-
-  const [notificationEmail, setNotificationEmail] = useState("");
-  const [savingEmail, setSavingEmail] = useState(false);
-
   const navigate = useNavigate();
-
-  const callAdmin = useCallback(async (body: Record<string, unknown>) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("No session");
-    const res = await supabase.functions.invoke("admin-users", { body });
-    if (res.error) throw new Error(res.error.message);
-    if (res.data?.error) throw new Error(res.data.error);
-    return res.data;
-  }, []);
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const data = await callAdmin({ action: "list_users" });
-      setUsers(data);
-    } catch {
-      toast.error("Gagal memuat daftar user");
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, [callAdmin]);
 
   useEffect(() => {
     const init = async () => {
@@ -79,97 +38,36 @@ const AdminSettings = () => {
         full_name: profile?.full_name || "",
       });
       setFullName(profile?.full_name || "");
-      // Load notification email
-      const { data: emailSetting } = await supabase
-        .from("site_settings")
-        .select("value")
-        .eq("key", "notification_email")
-        .single();
-      if (emailSetting) setNotificationEmail(emailSetting.value);
-
-      fetchUsers();
     };
     init();
-  }, [navigate, fetchUsers]);
+  }, [navigate]);
 
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      await callAdmin({ action: "update_profile", full_name: fullName });
+      // Perbarui metadata auth & profiles
+      if (currentUser) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ full_name: fullName })
+          .eq("id", currentUser.id);
+        if (profileError) throw profileError;
+      }
+
       if (newPassword.trim()) {
-        await callAdmin({ action: "update_password", new_password: newPassword });
+        const { error: pwError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        if (pwError) throw pwError;
         setNewPassword("");
       }
+
       setCurrentUser((prev) => prev ? { ...prev, full_name: fullName } : prev);
       toast.success("Profil berhasil diperbarui!");
     } catch (e: any) {
-      toast.error(e.message || "Gagal menyimpan");
+      toast.error(e.message || "Gagal menyimpan profil");
     }
     setSaving(false);
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      await callAdmin({
-        action: "create_user",
-        email: newEmail,
-        password: newUserPassword,
-        full_name: newUserName,
-        role: newUserRole,
-      });
-      toast.success("User berhasil ditambahkan!");
-      setNewEmail("");
-      setNewUserPassword("");
-      setNewUserName("");
-      setNewUserRole("user");
-      setShowAddUser(false);
-      fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || "Gagal menambah user");
-    }
-    setCreating(false);
-  };
-
-  const handleToggleRole = async (userId: string, role: string, hasRole: boolean) => {
-    try {
-      await callAdmin({
-        action: hasRole ? "remove_role" : "add_role",
-        user_id: userId,
-        role,
-      });
-      toast.success(hasRole ? "Role dihapus" : "Role ditambahkan");
-      fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || "Gagal mengubah role");
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Hapus user ini? Tindakan ini tidak bisa dibatalkan.")) return;
-    try {
-      await callAdmin({ action: "delete_user", user_id: userId });
-      toast.success("User dihapus");
-      fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || "Gagal menghapus user");
-    }
-  };
-
-  const handleSaveNotificationEmail = async () => {
-    setSavingEmail(true);
-    try {
-      const { error } = await supabase
-        .from("site_settings")
-        .update({ value: notificationEmail, updated_at: new Date().toISOString() })
-        .eq("key", "notification_email");
-      if (error) throw error;
-      toast.success("Email notifikasi berhasil diperbarui!");
-    } catch (e: any) {
-      toast.error(e.message || "Gagal menyimpan email");
-    }
-    setSavingEmail(false);
   };
 
   const handleLogout = async () => {
@@ -275,172 +173,6 @@ const AdminSettings = () => {
           </button>
         </section>
 
-        {/* Email Notification Settings */}
-        <section className="mb-10 border border-border bg-card p-4 sm:p-6">
-          <h2 className="mb-6 font-display text-xl text-foreground flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
-            Email Notifikasi
-          </h2>
-          <p className="mb-4 font-body text-sm text-muted-foreground">
-            Pesan dari form kontak website akan dikirim ke email ini.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">
-                Email Tujuan
-              </label>
-              <input
-                type="email"
-                value={notificationEmail}
-                onChange={(e) => setNotificationEmail(e.target.value)}
-                placeholder="email@contoh.com"
-                className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary"
-              />
-            </div>
-            <button
-              onClick={handleSaveNotificationEmail}
-              disabled={savingEmail}
-              className="flex items-center gap-2 border border-primary bg-primary px-6 py-3 font-body text-sm uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" />
-              {savingEmail ? "Menyimpan..." : "Simpan"}
-            </button>
-          </div>
-        </section>
-
-        {/* User Management */}
-        <section className="border border-border bg-card p-4 sm:p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="font-display text-xl text-foreground">Manajemen User</h2>
-            <button
-              onClick={() => setShowAddUser(!showAddUser)}
-              className="flex items-center gap-2 border border-primary bg-primary px-4 py-2 font-body text-xs uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary sm:text-sm"
-            >
-              <UserPlus className="h-4 w-4" />
-              Tambah User
-            </button>
-          </div>
-
-          {/* Add User Form */}
-          {showAddUser && (
-            <form onSubmit={handleCreateUser} className="mb-6 border border-border bg-background p-4">
-              <h3 className="mb-4 font-display text-lg text-foreground">Tambah User Baru</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Nama</label>
-                  <input
-                    required
-                    value={newUserName}
-                    onChange={(e) => setNewUserName(e.target.value)}
-                    className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={newUserPassword}
-                    onChange={(e) => setNewUserPassword(e.target.value)}
-                    className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block font-body text-xs uppercase tracking-wider text-muted-foreground">Role</label>
-                  <select
-                    value={newUserRole}
-                    onChange={(e) => setNewUserRole(e.target.value as "admin" | "user")}
-                    className="w-full border border-border bg-transparent px-4 py-3 font-body text-foreground outline-none focus:border-primary"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div className="mt-4 flex gap-3">
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="border border-primary bg-primary px-6 py-2 font-body text-sm uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
-                >
-                  {creating ? "Membuat..." : "Buat User"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddUser(false)}
-                  className="border border-border px-6 py-2 font-body text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
-                >
-                  Batal
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Users List */}
-          {loadingUsers ? (
-            <p className="font-body text-muted-foreground">Memuat...</p>
-          ) : (
-            <div className="space-y-3">
-              {users.map((u) => (
-                <div
-                  key={u.id}
-                  className="flex flex-col gap-3 border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-foreground">{u.full_name || "(Tanpa nama)"}</p>
-                    <p className="font-body text-xs text-muted-foreground">{u.email}</p>
-                    <div className="mt-1 flex gap-1">
-                      {u.roles.map((r) => (
-                        <span
-                          key={r}
-                          className={`inline-block px-2 py-0.5 font-body text-xs uppercase tracking-wider ${
-                            r === "admin"
-                              ? "bg-primary/20 text-primary"
-                              : "bg-secondary text-secondary-foreground"
-                          }`}
-                        >
-                          {r}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleToggleRole(u.id, "admin", u.roles.includes("admin"))}
-                      title={u.roles.includes("admin") ? "Hapus role admin" : "Jadikan admin"}
-                      className="flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-primary"
-                    >
-                      {u.roles.includes("admin") ? (
-                        <ShieldOff className="h-4 w-4" />
-                      ) : (
-                        <Shield className="h-4 w-4" />
-                      )}
-                    </button>
-                    {u.id !== currentUser?.id && (
-                      <button
-                        onClick={() => handleDeleteUser(u.id)}
-                        title="Hapus user"
-                        className="flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </main>
     </div>
   );

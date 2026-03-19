@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -14,6 +14,14 @@ interface PhotoItem {
   title: string;
   category: string;
   span: string;
+}
+
+interface PortfolioCategory {
+  id: string;
+  name: string;
+  description: string;
+  display_order: number;
+  photos: { id: string; image_url: string; title: string }[];
 }
 
 interface ServiceCategory {
@@ -37,10 +45,22 @@ const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
   const [current, setCurrent] = useState(0);
   const [sliding, setSliding] = useState<"left" | "right" | null>(null);
 
-  const photos = category.photos;
+  const photos = category.photos || [];
+
+  useEffect(() => {
+    if (photos.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      slide("next");
+    }, 5000); // Change every 2 seconds as requested
+
+    return () => clearInterval(interval);
+  }, [photos.length, current]); // Re-run when current changes to reset timer for smoother flow if user clicks manually
+
   if (photos.length === 0) return null;
 
   const slide = (dir: "prev" | "next") => {
+    if (sliding) return; // Prevent double trigger
     setSliding(dir === "next" ? "left" : "right");
     setTimeout(() => {
       setCurrent((prev) =>
@@ -51,15 +71,15 @@ const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
   };
 
   return (
-    <div className="group relative aspect-[4/3] w-full overflow-hidden rounded-sm bg-card">
+    <div className="group relative w-full overflow-hidden rounded-sm bg-muted/20 h-[300px] sm:h-[400px] flex items-center justify-center">
       <img
         src={photos[current].image_url}
         alt={category.name}
-        className={`h-full w-full object-cover transition-all duration-200 ease-out ${
+        className={`max-h-full max-w-full object-contain transition-all duration-300 ease-in-out ${
           sliding === "left"
-            ? "-translate-x-4 opacity-0"
+            ? "-translate-x-8 opacity-0"
             : sliding === "right"
-            ? "translate-x-4 opacity-0"
+            ? "translate-x-8 opacity-0"
             : "translate-x-0 opacity-100"
         }`}
       />
@@ -67,23 +87,23 @@ const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
         <>
           <button
             onClick={() => slide("prev")}
-            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/70 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-background"
+            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/50 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-background"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => slide("next")}
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/70 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-background"
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/50 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-background"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
             {photos.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === current ? "w-4 bg-primary" : "w-1.5 bg-foreground/40"
+                className={`h-1 rounded-full transition-all duration-300 ${
+                  i === current ? "w-6 bg-primary" : "w-1.5 bg-foreground/20"
                 }`}
               />
             ))}
@@ -95,31 +115,45 @@ const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
 };
 
 const GallerySection = () => {
-  const [dbPhotos, setDbPhotos] = useState<PhotoItem[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollPortfolio = (direction: "left" | "right") => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = window.innerWidth * 0.6;
+      scrollContainerRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  const [selectedCatIdx, setSelectedCatIdx] = useState<number | null>(null);
+  const [selectedPhotoIdx, setSelectedPhotoIdx] = useState<number>(0);
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null);
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
 
   useEffect(() => {
     const fetchPortfolio = async () => {
-      const { data } = await supabase
-        .from("portfolio_items")
+      const { data: categories } = await supabase
+        .from("portfolio_categories")
         .select("*")
         .order("display_order", { ascending: true });
 
-      if (data && data.length > 0) {
-        const spanPatterns = ["row-span-2", "", "row-span-2", "", "row-span-2", ""];
-        setDbPhotos(
-          data.map((item, i) => ({
-            src: item.image_url,
-            title: item.title,
-            category: item.category,
-            span: spanPatterns[i % spanPatterns.length],
-          }))
-        );
+      if (categories && categories.length > 0) {
+        const { data: photos } = await supabase
+          .from("portfolio_photos")
+          .select("*")
+          .order("display_order", { ascending: true });
+
+        const mapped: PortfolioCategory[] = categories.map((cat) => ({
+          ...cat,
+          photos: (photos || []).filter((p) => p.category_id === cat.id),
+        }));
+        setPortfolioCategories(mapped);
       }
     };
-
+    
     const fetchServices = async () => {
       const { data: categories } = await supabase
         .from("service_categories")
@@ -144,34 +178,36 @@ const GallerySection = () => {
     fetchServices();
   }, []);
 
-  const photos = dbPhotos.length > 0 ? dbPhotos : defaultPhotos;
+
 
   const goTo = useCallback(
     (direction: "prev" | "next") => {
-      if (selectedIndex === null) return;
+      if (selectedCatIdx === null) return;
+      const currentCat = portfolioCategories[selectedCatIdx];
+      if (!currentCat || currentCat.photos.length <= 1) return;
+
       setSlideDirection(direction === "next" ? "left" : "right");
       setTimeout(() => {
-        setSelectedIndex((prev) => {
-          if (prev === null) return null;
-          return direction === "next"
-            ? (prev + 1) % photos.length
-            : (prev - 1 + photos.length) % photos.length;
-        });
+        setSelectedPhotoIdx((prev) => 
+          direction === "next"
+            ? (prev + 1) % currentCat.photos.length
+            : (prev - 1 + currentCat.photos.length) % currentCat.photos.length
+        );
         setSlideDirection(null);
       }, 200);
     },
-    [selectedIndex, photos.length]
+    [selectedCatIdx, portfolioCategories]
   );
 
   useEffect(() => {
-    if (selectedIndex === null) return;
+    if (selectedCatIdx === null) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") goTo("next");
       else if (e.key === "ArrowLeft") goTo("prev");
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [selectedIndex, goTo]);
+  }, [selectedCatIdx, goTo]);
 
   return (
     <section id="portfolio" className="px-4 py-16 sm:px-8 md:py-24 md:px-16 lg:px-24">
@@ -185,31 +221,90 @@ const GallerySection = () => {
         </h2>
       </div>
 
-      <div className="grid auto-rows-[200px] grid-cols-1 gap-3 sm:auto-rows-[250px] sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-        {photos.map((photo, i) => (
-          <div
-            key={i}
-            className={`gallery-image group relative cursor-pointer overflow-hidden rounded-lg ${photo.span}`}
-            onClick={() => setSelectedIndex(i)}
-          >
-            <img
-              src={photo.src}
-              alt={photo.title}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-lg bg-background/50 px-4 py-2.5 text-center backdrop-blur-sm">
-                <p className="font-body text-[10px] uppercase tracking-[0.25em] text-primary sm:text-xs">
-                  {photo.category}
-                </p>
-                <p className="mt-0.5 font-display text-sm text-foreground sm:text-base">
-                  {photo.title}
-                </p>
+      <div className="relative group/slider">
+        {/* Scroll Buttons for Desktop */}
+        <button 
+          onClick={() => scrollPortfolio("left")}
+          className="absolute -left-4 sm:-left-8 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-12 w-12 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-background hover:scale-110 group-hover/slider:opacity-100 shadow-xl border border-white/10"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <button 
+          onClick={() => scrollPortfolio("right")}
+          className="absolute -right-4 sm:-right-8 top-1/2 -translate-y-1/2 z-10 hidden md:flex h-12 w-12 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 backdrop-blur-sm transition-all duration-300 hover:bg-background hover:scale-110 group-hover/slider:opacity-100 shadow-xl border border-white/10"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+
+        {/* Scroll Container */}
+        <div ref={scrollContainerRef} className="flex w-full gap-4 sm:gap-6 overflow-x-auto pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {portfolioCategories.length > 0 ? (
+          portfolioCategories.map((cat, i) => {
+            if (cat.photos.length === 0) return null;
+            const coverPhoto = cat.photos[0];
+
+            return (
+              <div
+                key={cat.id}
+                className="shrink-0 snap-center relative cursor-pointer overflow-hidden rounded-xl bg-muted/10 h-[400px] sm:h-[500px]"
+                onClick={() => {
+                  setSelectedCatIdx(i);
+                  setSelectedPhotoIdx(0);
+                }}
+              >
+                <div className="relative group flex h-full items-center justify-center">
+                  <img
+                    src={coverPhoto.image_url}
+                    alt={cat.name}
+                    className="h-full w-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute rounded-xl bg-background/80 px-6 py-3 text-center backdrop-blur-sm shadow-xl transition-transform duration-500 group-hover:scale-110 pointer-events-none">
+                    <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
+                      {cat.description || cat.name}
+                    </p>
+                    <p className="mt-0.5 font-display text-xl text-foreground capitalize">
+                      {cat.name}
+                    </p>
+                    <p className="mt-1 font-body text-[10px] text-muted-foreground">
+                      {cat.photos.length} Foto
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          defaultPhotos.map((photo, i) => (
+            <div
+              key={i}
+              className="shrink-0 snap-center relative cursor-pointer overflow-hidden rounded-xl bg-muted/10 h-[400px] sm:h-[500px]"
+            >
+              <div className="relative group flex h-full items-center justify-center">
+                <img
+                  src={photo.src}
+                  alt={photo.title}
+                  className="h-full w-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute rounded-xl bg-background/80 px-6 py-3 text-center backdrop-blur-sm shadow-xl transition-transform duration-500 group-hover:scale-110 pointer-events-none">
+                  <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
+                    {photo.category}
+                  </p>
+                  <p className="mt-0.5 font-display text-xl text-foreground capitalize">
+                    {photo.category}
+                  </p>
+                  <p className="mt-1 font-body text-[10px] text-muted-foreground">
+                    1 Foto
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
+        </div>
       </div>
 
       {/* Jasa Lainnya */}
@@ -266,26 +361,38 @@ const GallerySection = () => {
       )}
 
       {/* Lightbox Modal */}
-      <Dialog open={selectedIndex !== null} onOpenChange={(open) => !open && setSelectedIndex(null)}>
+      <Dialog open={selectedCatIdx !== null} onOpenChange={(open) => !open && setSelectedCatIdx(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 border-none bg-transparent shadow-none overflow-hidden [&>button]:hidden">
-          {selectedIndex !== null && (
+          {selectedCatIdx !== null && portfolioCategories[selectedCatIdx] && (
             <div className="relative flex items-center justify-center w-[95vw] h-[90vh]">
               <button
-                onClick={() => setSelectedIndex(null)}
+                onClick={() => setSelectedCatIdx(null)}
                 className="absolute top-3 right-3 z-20 rounded-full bg-background/80 p-2 text-foreground backdrop-blur-sm transition-opacity hover:bg-background"
               >
                 <X className="h-5 w-5" />
               </button>
-              <button
-                onClick={() => goTo("prev")}
-                className="absolute left-3 z-20 rounded-full bg-background/80 p-3 text-foreground backdrop-blur-sm transition-opacity hover:bg-background"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
+              
+              {portfolioCategories[selectedCatIdx].photos.length > 1 && (
+                <>
+                  <button
+                    onClick={() => goTo("prev")}
+                    className="absolute left-3 z-20 rounded-full bg-background/80 p-3 text-foreground backdrop-blur-sm transition-opacity hover:bg-background"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={() => goTo("next")}
+                    className="absolute right-3 z-20 rounded-full bg-background/80 p-3 text-foreground backdrop-blur-sm transition-opacity hover:bg-background"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+
               <div className="relative h-full w-full flex items-center justify-center overflow-hidden">
                 <img
-                  src={photos[selectedIndex].src}
-                  alt={photos[selectedIndex].title}
+                  src={portfolioCategories[selectedCatIdx].photos[selectedPhotoIdx].image_url}
+                  alt={portfolioCategories[selectedCatIdx].photos[selectedPhotoIdx].title}
                   className={`max-h-[85vh] max-w-full rounded-lg object-contain transition-all duration-200 ease-out ${
                     slideDirection === "left"
                       ? "-translate-x-8 opacity-0"
@@ -296,22 +403,16 @@ const GallerySection = () => {
                 />
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-xl bg-background/80 px-5 py-2.5 text-center backdrop-blur-sm">
                   <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
-                    {photos[selectedIndex].category}
+                    {portfolioCategories[selectedCatIdx].description || portfolioCategories[selectedCatIdx].name}
                   </p>
                   <p className="mt-0.5 font-display text-base text-foreground">
-                    {photos[selectedIndex].title}
+                    {portfolioCategories[selectedCatIdx].photos[selectedPhotoIdx].title || portfolioCategories[selectedCatIdx].name}
                   </p>
                   <p className="mt-1 font-body text-[10px] text-muted-foreground">
-                    {selectedIndex + 1} / {photos.length}
+                    {selectedPhotoIdx + 1} / {portfolioCategories[selectedCatIdx].photos.length}
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => goTo("next")}
-                className="absolute right-3 z-20 rounded-full bg-background/80 p-3 text-foreground backdrop-blur-sm transition-opacity hover:bg-background"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
             </div>
           )}
         </DialogContent>

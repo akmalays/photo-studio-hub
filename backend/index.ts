@@ -33,9 +33,14 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 app.post("/api/admin/users", adminUsersHandler);
 
 // Portfolio CRUD
-app.get("/api/portfolio", portfolio.getPortfolio);
-app.post("/api/portfolio", portfolio.createPortfolio);
-app.delete("/api/portfolio/:id", portfolio.deletePortfolio);
+app.get("/api/portfolio/categories", portfolio.getCategories);
+app.post("/api/portfolio/categories", portfolio.createCategory);
+app.put("/api/portfolio/categories/:id", portfolio.updateCategory);
+app.delete("/api/portfolio/categories/:id", portfolio.deleteCategory);
+app.get("/api/portfolio/photos", portfolio.getPhotos);
+app.post("/api/portfolio/photos", portfolio.createPhoto);
+app.put("/api/portfolio/photos/:id", portfolio.updatePhoto);
+app.delete("/api/portfolio/photos/:id", portfolio.deletePhoto);
 
 // Services CRUD
 app.get("/api/services/categories", services.getCategories);

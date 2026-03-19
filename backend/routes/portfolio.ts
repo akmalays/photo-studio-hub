@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { supabaseAdmin } from "../supabaseAdmin.js";
 
-export async function getPortfolio(req: Request, res: Response) {
+// Categories
+export async function getCategories(req: Request, res: Response) {
   try {
     const { data, error } = await supabaseAdmin
-      .from("portfolio_items")
+      .from("portfolio_categories")
       .select("*")
       .order("display_order", { ascending: true });
     
@@ -15,16 +16,16 @@ export async function getPortfolio(req: Request, res: Response) {
   }
 }
 
-export async function createPortfolio(req: Request, res: Response) {
+export async function createCategory(req: Request, res: Response) {
   try {
-    const { title, category, image_url, display_order } = req.body;
-    if (!title || !category || !image_url) {
+    const { name, description, display_order } = req.body;
+    if (!name ) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     const { data, error } = await supabaseAdmin
-      .from("portfolio_items")
-      .insert({ title, category, image_url, display_order: display_order ?? 0 })
+      .from("portfolio_categories")
+      .insert({ name, description, display_order: display_order ?? 0 })
       .select()
       .single();
     
@@ -35,11 +36,30 @@ export async function createPortfolio(req: Request, res: Response) {
   }
 }
 
-export async function deletePortfolio(req: Request, res: Response) {
+export async function updateCategory(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { name, description, display_order } = req.body;
+    
+    const { data, error } = await supabaseAdmin
+      .from("portfolio_categories")
+      .update({ name, description, display_order })
+      .eq("id", id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function deleteCategory(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const { error } = await supabaseAdmin
-      .from("portfolio_items")
+      .from("portfolio_categories")
       .delete()
       .eq("id", id);
     
@@ -49,3 +69,73 @@ export async function deletePortfolio(req: Request, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
+
+// Photos
+export async function getPhotos(req: Request, res: Response) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("portfolio_photos")
+      .select("*")
+      .order("display_order", { ascending: true });
+    
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function createPhoto(req: Request, res: Response) {
+  try {
+    const { category_id, image_url, title, display_order } = req.body;
+    if (!category_id || !image_url) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("portfolio_photos")
+      .insert({ category_id, image_url, title, display_order: display_order ?? 0 })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function updatePhoto(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { image_url, title, display_order } = req.body;
+    
+    const { data, error } = await supabaseAdmin
+      .from("portfolio_photos")
+      .update({ image_url, title, display_order })
+      .eq("id", id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function deletePhoto(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { error } = await supabaseAdmin
+      .from("portfolio_photos")
+      .delete()
+      .eq("id", id);
+    
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
