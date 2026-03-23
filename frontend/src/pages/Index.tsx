@@ -33,7 +33,7 @@ const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
     <div className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}>
       {/* Logo */}
       <div className="relative mb-6">
-        <img src={logo} alt="wArna Studio" className="h-32 w-32 object-contain animate-pulse" />
+        <img src={logo} alt="wArnA Studio" className="h-32 w-32 object-contain animate-pulse" />
       </div>
 
       {/* Brand */}

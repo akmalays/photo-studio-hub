@@ -48,7 +48,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative h-screen w-full overflow-hidden bg-background">
+    <section className="relative h-[70vh] sm:h-screen w-full overflow-hidden bg-background">
       <div className="absolute inset-0">
         {collagePhotos.length > 0 ? (
           <div className="grid h-full w-full grid-cols-2 grid-rows-5 sm:grid-cols-3 sm:grid-rows-3 gap-2 sm:gap-3 p-2 sm:p-3 opacity-70">
@@ -72,7 +72,7 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-background via-background/95 to-background/50 sm:via-background/80 sm:to-background/20" />
       </div>
 
-      <div className="relative z-10 flex h-full items-end px-4 pb-16 sm:px-8 sm:pb-24 md:items-center md:pb-0 md:px-16 lg:px-24">
+      <div className="relative z-10 flex h-full items-center px-4 pb-0 sm:items-end sm:px-8 sm:pb-24 md:items-center md:pb-0 md:px-16 lg:px-24">
         <div className="max-w-2xl animate-fade-up">
           <p className="mb-3 font-body text-xs uppercase tracking-[0.3em] text-primary sm:mb-4 sm:text-sm">
             Layanan Visual & Cetak
