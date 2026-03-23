@@ -7,6 +7,7 @@ import * as portfolio from "./routes/portfolio.js";
 import * as services from "./routes/services.js";
 import * as contact from "./routes/contact.js";
 import * as announcements from "./routes/announcements.js";
+import * as stats from "./routes/stats.js";
 
 const app = express();
 
@@ -61,6 +62,10 @@ app.get("/api/announcements", announcements.getAnnouncements);
 app.post("/api/announcements", announcements.createAnnouncement);
 app.put("/api/announcements/:id", announcements.updateAnnouncement);
 app.delete("/api/announcements/:id", announcements.deleteAnnouncement);
+
+// Stats & Traffic Tracking
+app.post("/api/stats/track", stats.trackVisit);
+app.get("/api/stats/summary", stats.getStatsSummary);
 // Cleanup Route (Temporary to clear user roles)
 app.post("/api/setup/cleanup", async (req, res) => {
   try {

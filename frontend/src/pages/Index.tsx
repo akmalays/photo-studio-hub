@@ -53,6 +53,16 @@ const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+  useEffect(() => {
+    // Track visit on mount
+    fetch(`${apiUrl}/api/stats/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ page_path: "/", user_agent: navigator.userAgent })
+    }).catch(err => console.error("Stats tracking failed:", err));
+  }, [apiUrl]);
 
   return (
     <>

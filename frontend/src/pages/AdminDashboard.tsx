@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X, Edit, Loader2 } from "lucide-react";
+import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X, Edit, Loader2, BarChart3, Users, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { toast } from "sonner";
 
 interface PortfolioCategory {
@@ -65,7 +66,11 @@ const AdminDashboard = () => {
   const [servicePreview, setServicePreview] = useState<string | null>(null);
   const [uploadingService, setUploadingService] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
-  const [activeSection, setActiveSection] = useState<"portfolio" | "services" | "announcements">("portfolio");
+  const [activeSection, setActiveSection] = useState<"portfolio" | "services" | "announcements" | "stats">("portfolio");
+
+  // Stats state
+  const [visitorStats, setVisitorStats] = useState<{ total: number; uniqueTotal: number; today: number; uniqueToday: number; last7Days: any[] } | null>(null);
+  const [fetchingStats, setFetchingStats] = useState(false);
   
   // Announcements (ticker) state
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -123,6 +128,26 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   }, [apiUrl]);
+
+  const fetchStats = useCallback(async () => {
+    setFetchingStats(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/stats/summary`);
+      if (!res.ok) throw new Error("Gagal mengambil data statistik");
+      const data = await res.json();
+      setVisitorStats(data);
+    } catch (error: any) {
+      console.error(error.message);
+    } finally {
+      setFetchingStats(false);
+    }
+  }, [apiUrl]);
+
+  useEffect(() => {
+    if (activeSection === "stats") {
+      fetchStats();
+    }
+  }, [activeSection, fetchStats]);
 
   const fetchServices = useCallback(async () => {
     try {
@@ -660,6 +685,14 @@ const AdminDashboard = () => {
           >
             Pengumuman / Ticker
           </button>
+          <button
+            onClick={() => setActiveSection("stats")}
+            className={`border-b-2 px-4 py-3 font-body text-sm transition-colors ${
+              activeSection === "stats" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Statistik Pengunjung
+          </button>
         </div>
       </div>
 
@@ -668,7 +701,10 @@ const AdminDashboard = () => {
         {activeSection === "portfolio" && (
           <>
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="font-display text-xl text-foreground sm:text-2xl">Portfolio Categories</h2>
+              <div>
+                <h2 className="font-display text-2xl text-foreground">Portfolio Categories</h2>
+                <p className="text-xs text-muted-foreground font-body mt-0.5">Kelola kategori foto yang muncul di halaman utama (Wedding, Event, dll).</p>
+              </div>
               <button
                 onClick={() => setShowPortfolioCategoryForm(!showPortfolioCategoryForm)}
                 className="flex items-center gap-2 border border-primary bg-primary px-4 py-2 font-body text-xs uppercase tracking-wider text-primary-foreground transition-all duration-300 hover:bg-transparent hover:text-primary sm:text-sm"
@@ -848,7 +884,10 @@ const AdminDashboard = () => {
         {activeSection === "services" && (
           <>
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="font-display text-xl text-foreground sm:text-2xl">Kategori Jasa Lainnya</h2>
+              <div>
+                <h2 className="font-display text-2xl text-foreground">Layanan Jasa Lainnya</h2>
+                <p className="text-xs text-muted-foreground font-body mt-0.5">Kelola foto untuk layanan tambahan seperti Cetak Foto, ID Card, dll.</p>
+              </div>
               <button
                 onClick={() => setShowCategoryForm(!showCategoryForm)}
                 className="flex items-center gap-2 border border-primary bg-primary px-4 py-2 font-body text-xs uppercase tracking-wider text-primary-foreground transition-all duration-300 hover:bg-transparent hover:text-primary sm:text-sm"
@@ -1083,6 +1122,109 @@ const AdminDashboard = () => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "stats" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-2xl text-foreground">Statistik Pengunjung</h2>
+                <p className="text-xs text-muted-foreground font-body mt-0.5">Pantau jumlah kunjungan ke website Anda.</p>
+              </div>
+              <button 
+                onClick={fetchStats}
+                disabled={fetchingStats}
+                className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {fetchingStats ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
+                Refresh
+              </button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg bg-blue-500/10 p-3 text-blue-500">
+                    <Users className="h-6 w-6" />
+                  </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Hits / Unik</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {visitorStats?.total || 0} <span className="text-sm font-normal text-muted-foreground">/ {visitorStats?.uniqueTotal || 0}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-green-500/10 p-3 text-green-500">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Hits / Unik Hari Ini</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {visitorStats?.today || 0} <span className="text-sm font-normal text-muted-foreground">/ {visitorStats?.uniqueToday || 0}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="rounded-lg bg-purple-500/10 p-3 text-purple-500">
+                  <BarChart3 className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Rata-rata Harian (Unik)</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {visitorStats ? Math.round(visitorStats.last7Days.reduce((acc: any, curr: any) => acc + curr.uniques, 0) / 7) : 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <h3 className="mb-6 font-display text-lg text-foreground">Tren Kunjungan (7 Hari Terakhir)</h3>
+              <div className="h-[300px] w-full">
+                {visitorStats && visitorStats.last7Days ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={visitorStats.last7Days}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                      />
+                      <Tooltip 
+                        cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                        contentStyle={{ 
+                          backgroundColor: '#1f2937', 
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                          color: '#f3f4f6',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                      <Bar dataKey="hits" fill="#4b5563" radius={[4, 4, 0, 0]} name="Total Hits" />
+                      <Bar dataKey="uniques" fill="#d4af37" radius={[4, 4, 0, 0]} name="Unique Visitors" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
