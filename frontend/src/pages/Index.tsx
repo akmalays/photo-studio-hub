@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 
-import logo from "@/assets/logo-warna.jpg";
+import logo from "@/assets/logo-warna.png";
 import AboutSection from "@/components/AboutSection";
 import ContactSection from "@/components/ContactSection";
 import FooterSection from "@/components/FooterSection";
@@ -33,12 +33,12 @@ const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
     <div className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}>
       {/* Logo */}
       <div className="relative mb-6">
-        <img src={logo} alt="wArna Studio" className="h-28 w-28 rounded-full bg-white object-contain p-2 animate-pulse" />
+        <img src={logo} alt="wArna Studio" className="h-32 w-32 object-contain animate-pulse" />
       </div>
 
       {/* Brand */}
       <h1 className="font-display text-3xl font-semibold tracking-wider text-foreground">
-        wArna<span className="text-primary"> Studio</span>
+        wArnA<span className="text-primary"> Studio</span>
       </h1>
       <p className="mt-2 font-body text-xs uppercase tracking-[0.3em] text-muted-foreground">Photography Studio</p>
 

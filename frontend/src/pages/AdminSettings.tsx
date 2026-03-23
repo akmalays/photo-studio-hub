@@ -82,7 +82,7 @@ const AdminSettings = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-xl font-semibold text-foreground sm:text-2xl">
-              wArna<span className="text-primary"> Studio</span> Admin
+              wArnA<span className="text-primary"> Studio</span> Admin
             </h1>
             <p className="font-body text-xs text-muted-foreground sm:text-sm">Pengaturan</p>
           </div>

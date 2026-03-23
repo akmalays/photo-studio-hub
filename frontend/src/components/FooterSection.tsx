@@ -1,16 +1,16 @@
-import logo from "@/assets/logo-warna.jpg";
+import logo from "@/assets/logo-warna.png";
 
 const FooterSection = () => {
   return (
     <footer className="border-t border-border px-8 py-12 md:px-16 lg:px-24">
       <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-        <a href="#" className="flex items-center gap-2">
-          <img src={logo} alt="wArna Studio" className="h-10 w-10 rounded-full bg-white object-contain p-1" />
+        <a href="/" className="flex items-center gap-2">
+          <img src={logo} alt="wArnA Studio" className="h-10 w-10 object-contain" />
           <span className="font-display text-lg font-semibold text-foreground">
-            wArna<span className="text-primary"> Studio</span>
+            wArnA<span className="text-primary italic"> Studio</span>
           </span>
         </a>
-        <p className="font-body text-sm text-muted-foreground">© 2026 wArna Studio Photography. All rights reserved.</p>
+        <p className="font-body text-sm text-muted-foreground">© 2026 wArnA Studio Photography. All rights reserved.</p>
       </div>
     </footer>
   );

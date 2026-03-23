@@ -51,7 +51,7 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="font-display text-3xl font-semibold text-foreground">
-            wArna<span className="text-primary"> Studio</span>
+            wArnA<span className="text-primary"> Studio</span>
           </h1>
           <p className="mt-2 font-body text-sm text-muted-foreground">Admin Login</p>
         </div>

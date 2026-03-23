@@ -20,10 +20,10 @@ const AboutSection = () => {
         <div>
           <p className="mb-3 font-body text-sm uppercase tracking-[0.3em] text-primary">Tentang Kami</p>
           <h2 className="mb-4 font-display text-3xl font-semibold text-foreground sm:mb-6 sm:text-4xl md:text-5xl">
-            Tentang <span className="italic text-gradient-gold">wArna Studio</span>
+            Tentang <span className="italic text-gradient-gold">wArnA Studio</span>
           </h2>
           <p className="mb-4 font-body text-base leading-relaxed text-muted-foreground sm:mb-6 sm:text-lg">
-            wArna Studio adalah pusat layanan visual dan dokumentasi profesional yang berdedikasi untuk menangkap setiap momen berharga dan memenuhi kebutuhan administratif Anda. Dengan pengalaman bertahun-tahun, kami telah menjadi mitra terpercaya untuk berbagai kebutuhan — mulai dari sesi foto studio yang intim hingga dokumentasi event besar.
+            wArnA Studio adalah pusat layanan visual dan dokumentasi profesional yang berdedikasi untuk menangkap setiap momen berharga dan memenuhi kebutuhan administratif Anda. Dengan pengalaman bertahun-tahun, kami telah menjadi mitra terpercaya untuk berbagai kebutuhan — mulai dari sesi foto studio yang intim hingga dokumentasi event besar.
           </p>
           <p className="mb-8 font-body text-base leading-relaxed text-muted-foreground sm:mb-10 sm:text-lg">
             Kami tidak hanya menawarkan jasa fotografi, tetapi juga solusi cetak dokumen penting seperti kartu pelajar (ID card) dan pas foto dengan standar kualitas tinggi. Kepercayaan Anda adalah prioritas kami dalam setiap karya yang kami hasilkan.

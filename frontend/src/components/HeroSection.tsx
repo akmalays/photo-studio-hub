@@ -57,7 +57,7 @@ const HeroSection = () => {
                 <img
                   src={url}
                   className="h-full w-full object-cover object-[50%_25%] transition-transform duration-1000 hover:scale-110"
-                  alt={`Karya Warna Studio ${i + 1}`}
+                  alt={`Karya wArnA Studio ${i + 1}`}
                 />
               </div>
             ))}
