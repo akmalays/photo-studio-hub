@@ -42,6 +42,13 @@ interface ContactMessage {
   created_at: string;
 }
 
+interface Announcement {
+  id: string;
+  text: string;
+  is_active: boolean;
+  display_order: number;
+}
+
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
@@ -58,7 +65,13 @@ const AdminDashboard = () => {
   const [servicePreview, setServicePreview] = useState<string | null>(null);
   const [uploadingService, setUploadingService] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
-  const [activeSection, setActiveSection] = useState<"portfolio" | "services">("portfolio");
+  const [activeSection, setActiveSection] = useState<"portfolio" | "services" | "announcements">("portfolio");
+  
+  // Announcements (ticker) state
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [newAnnouncementText, setNewAnnouncementText] = useState("");
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editAnnouncementText, setEditAnnouncementText] = useState("");
   
   // New Portfolio states
   const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
@@ -143,6 +156,73 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/announcements`);
+      if (!res.ok) return;
+      setAnnouncements(await res.json());
+    } catch(e) { console.error(e); }
+  }, [apiUrl]);
+
+  const handleCreateAnnouncement = async () => {
+    if (!newAnnouncementText.trim()) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${apiUrl}/api/announcements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ text: newAnnouncementText.trim(), is_active: true, display_order: announcements.length }),
+      });
+      if (!res.ok) throw new Error("Gagal membuat pengumuman");
+      toast.success("Pengumuman ditambahkan!");
+      setNewAnnouncementText("");
+      fetchAnnouncements();
+    } catch(e: any) { toast.error(e.message); }
+  };
+
+  const handleUpdateAnnouncement = async () => {
+    if (!editingAnnouncement || !editAnnouncementText.trim()) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${apiUrl}/api/announcements/${editingAnnouncement.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ text: editAnnouncementText.trim() }),
+      });
+      if (!res.ok) throw new Error("Gagal memperbarui pengumuman");
+      toast.success("Pengumuman diperbarui!");
+      setEditingAnnouncement(null);
+      fetchAnnouncements();
+    } catch(e: any) { toast.error(e.message); }
+  };
+
+  const handleToggleAnnouncement = async (ann: Announcement) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${apiUrl}/api/announcements/${ann.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ is_active: !ann.is_active }),
+      });
+      if (!res.ok) throw new Error("Gagal mengubah status");
+      fetchAnnouncements();
+    } catch(e: any) { toast.error(e.message); }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    if (!confirm("Hapus pengumuman ini?")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${apiUrl}/api/announcements/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (!res.ok) throw new Error("Gagal menghapus");
+      toast.success("Pengumuman dihapus");
+      fetchAnnouncements();
+    } catch(e: any) { toast.error(e.message); }
+  };
+
   const fetchMessages = useCallback(async () => {
     try {
       setFetchingMessages(true);
@@ -185,33 +265,35 @@ const AdminDashboard = () => {
       fetchItems();
       fetchServices();
       fetchMessages();
-      
-      // Poll for messages as backup
-      const interval = setInterval(fetchMessages, 60000);
-
-      // Real-time subscription
-      console.log("Subscribing to contact_messages real-time...");
-      const channel = supabase
-        .channel("contact_messages_changes")
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "contact_messages" },
-          (payload) => {
-            console.log("New contact message received via Realtime:", payload);
-            fetchMessages();
-          }
-        )
-        .subscribe((status) => {
-          console.log("Real-time subscription status:", status);
-        });
-
-      return () => {
-        clearInterval(interval);
-        supabase.removeChannel(channel);
-      };
+      fetchAnnouncements();
     };
+
     checkAuth();
-  }, [navigate, fetchItems, fetchServices, fetchMessages]);
+
+    // Poll for messages as backup
+    const interval = setInterval(fetchMessages, 60000);
+
+    // Real-time subscription
+    console.log("Subscribing to contact_messages real-time...");
+    const channel = supabase
+      .channel("contact_messages_changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "contact_messages" },
+        (payload) => {
+          console.log("New contact message received via Realtime:", payload);
+          fetchMessages();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Real-time subscription status:", status);
+      });
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, fetchItems, fetchServices, fetchMessages, fetchAnnouncements]);
 
   const handleAddPortfolioCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -570,6 +652,14 @@ const AdminDashboard = () => {
           >
             Jasa Lainnya
           </button>
+          <button
+            onClick={() => setActiveSection("announcements")}
+            className={`border-b-2 px-4 py-3 font-body text-sm transition-colors ${
+              activeSection === "announcements" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Pengumuman / Ticker
+          </button>
         </div>
       </div>
 
@@ -903,6 +993,96 @@ const AdminDashboard = () => {
               </div>
             )}
           </>
+        )}
+        {activeSection === "announcements" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-lg text-foreground">Pengumuman Running Text</h2>
+                <p className="text-xs text-muted-foreground font-body mt-0.5">Teks ini akan berjalan di bawah navbar website.</p>
+              </div>
+            </div>
+
+            {/* Add new */}
+            <div className="border border-border bg-card p-4">
+              <h3 className="font-display text-sm text-foreground mb-3">Tambah Pengumuman Baru</h3>
+              <div className="flex gap-2">
+                <input
+                  value={newAnnouncementText}
+                  onChange={(e) => setNewAnnouncementText(e.target.value)}
+                  placeholder="Tulis teks pengumuman..."
+                  className="flex-1 border border-border bg-transparent px-3 py-2 font-body text-sm text-foreground outline-none focus:border-primary"
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateAnnouncement()}
+                />
+                <button
+                  onClick={handleCreateAnnouncement}
+                  disabled={!newAnnouncementText.trim()}
+                  className="flex items-center gap-2 border border-primary bg-primary px-4 py-2 font-body text-xs uppercase tracking-wider text-primary-foreground transition-all hover:bg-transparent hover:text-primary disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah
+                </button>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="space-y-2">
+              {announcements.length === 0 ? (
+                <p className="font-body text-sm text-muted-foreground py-6 text-center border border-dashed border-border">Belum ada pengumuman.</p>
+              ) : (
+                announcements.map((ann) => (
+                  <div key={ann.id} className="border border-border bg-card p-4">
+                    {editingAnnouncement?.id === ann.id ? (
+                      <div className="flex gap-2">
+                        <input
+                          value={editAnnouncementText}
+                          onChange={(e) => setEditAnnouncementText(e.target.value)}
+                          className="flex-1 border border-primary bg-transparent px-3 py-2 font-body text-sm text-foreground outline-none"
+                          autoFocus
+                        />
+                        <button onClick={handleUpdateAnnouncement} className="border border-primary bg-primary px-3 py-1 font-body text-xs text-primary-foreground hover:bg-transparent hover:text-primary">Simpan</button>
+                        <button onClick={() => setEditingAnnouncement(null)} className="border border-border px-3 py-1 font-body text-xs text-muted-foreground hover:text-foreground">Batal</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-body text-sm ${ann.is_active ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                            {ann.text}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Active toggle */}
+                          <button
+                            onClick={() => handleToggleAnnouncement(ann)}
+                            title={ann.is_active ? "Nonaktifkan" : "Aktifkan"}
+                            className={`h-5 w-9 rounded-full transition-colors ${ann.is_active ? "bg-primary" : "bg-border"} relative`}
+                          >
+                            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ann.is_active ? "translate-x-4" : "translate-x-0.5"}`} />
+                          </button>
+                          {/* Edit */}
+                          <button
+                            onClick={() => { setEditingAnnouncement(ann); setEditAnnouncementText(ann.text); }}
+                            className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                          {/* Delete */}
+                          <button
+                            onClick={() => handleDeleteAnnouncement(ann.id)}
+                            className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         )}
       </main>
     </div>

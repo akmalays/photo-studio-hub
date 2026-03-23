@@ -7,6 +7,7 @@ import FooterSection from "@/components/FooterSection";
 import GallerySection from "@/components/GallerySection";
 import HeroSection from "@/components/HeroSection";
 import Navbar from "@/components/Navbar";
+import TickerBanner from "@/components/TickerBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
 const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
@@ -58,6 +59,7 @@ const Index = () => {
       {loading && <StudioLoader onFinish={() => setLoading(false)} />}
       <div className="min-h-screen bg-background">
         <Navbar />
+        <TickerBanner />
         <HeroSection />
         <GallerySection />
         <AboutSection />

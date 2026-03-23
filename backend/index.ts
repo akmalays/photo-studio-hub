@@ -6,6 +6,7 @@ import { adminUsersHandler } from "./routes/adminUsers.js";
 import * as portfolio from "./routes/portfolio.js";
 import * as services from "./routes/services.js";
 import * as contact from "./routes/contact.js";
+import * as announcements from "./routes/announcements.js";
 
 const app = express();
 
@@ -54,6 +55,12 @@ app.delete("/api/services/photos/:id", services.deletePhoto);
 app.post("/api/contact", contact.contactHandler);
 app.get("/api/contact/messages", contact.getMessages);
 app.delete("/api/contact/messages/:id", contact.deleteMessage);
+
+// Announcements (Ticker) Routes
+app.get("/api/announcements", announcements.getAnnouncements);
+app.post("/api/announcements", announcements.createAnnouncement);
+app.put("/api/announcements/:id", announcements.updateAnnouncement);
+app.delete("/api/announcements/:id", announcements.deleteAnnouncement);
 // Cleanup Route (Temporary to clear user roles)
 app.post("/api/setup/cleanup", async (req, res) => {
   try {
