@@ -998,14 +998,14 @@ const AdminDashboard = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-display text-lg text-foreground">Pengumuman Running Text</h2>
+                <h2 className="font-display text-2xl text-foreground">Pengumuman Running Text</h2>
                 <p className="text-xs text-muted-foreground font-body mt-0.5">Teks ini akan berjalan di bawah navbar website.</p>
               </div>
             </div>
 
             {/* Add new */}
             <div className="border border-border bg-card p-4">
-              <h3 className="font-display text-sm text-foreground mb-3">Tambah Pengumuman Baru</h3>
+              <h3 className="font-display text-lg text-foreground mb-3">Tambah Pengumuman Baru</h3>
               <div className="flex gap-2">
                 <input
                   value={newAnnouncementText}
@@ -1052,13 +1052,15 @@ const AdminDashboard = () => {
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {/* Active toggle */}
-                          <button
-                            onClick={() => handleToggleAnnouncement(ann)}
-                            title={ann.is_active ? "Nonaktifkan" : "Aktifkan"}
-                            className={`h-5 w-9 rounded-full transition-colors ${ann.is_active ? "bg-primary" : "bg-border"} relative`}
-                          >
-                            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ann.is_active ? "translate-x-4" : "translate-x-0.5"}`} />
-                          </button>
+                          <div className="mr-1.5 flex items-center">
+                            <button
+                              onClick={() => handleToggleAnnouncement(ann)}
+                              title={ann.is_active ? "Nonaktifkan" : "Aktifkan"}
+                              className={`h-5 w-10 min-w-[40px] rounded-full transition-all duration-300 focus:outline-none ${ann.is_active ? "bg-primary" : "bg-muted-foreground/30"} relative border-none`}
+                            >
+                              <span className={`absolute top-[3px] h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-all duration-300 ${ann.is_active ? "left-[23px]" : "left-[3px]"}`} />
+                            </button>
+                          </div>
                           {/* Edit */}
                           <button
                             onClick={() => { setEditingAnnouncement(ann); setEditAnnouncementText(ann.text); }}
