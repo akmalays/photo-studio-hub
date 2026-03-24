@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X, Edit, Loader2, BarChart3, Users, TrendingUp } from "lucide-react";
+import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X, Edit, Loader2, BarChart3, Users, TrendingUp, Globe, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { toast } from "sonner";
 
@@ -69,7 +69,15 @@ const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<"portfolio" | "services" | "announcements" | "stats">("portfolio");
 
   // Stats state
-  const [visitorStats, setVisitorStats] = useState<{ total: number; uniqueTotal: number; today: number; uniqueToday: number; last7Days: any[] } | null>(null);
+  const [visitorStats, setVisitorStats] = useState<{ 
+    total: number; 
+    uniqueTotal: number; 
+    today: number; 
+    uniqueToday: number; 
+    topCountries: { name: string; count: number }[];
+    topCities: { name: string; count: number }[];
+    last7Days: any[] 
+  } | null>(null);
   const [fetchingStats, setFetchingStats] = useState(false);
   
   // Announcements (ticker) state
@@ -1150,7 +1158,7 @@ const AdminDashboard = () => {
                     <Users className="h-6 w-6" />
                   </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Hits / Unik</p>
+                  <p className="text-sm text-muted-foreground">Total Pengunjung</p>
                   <p className="text-2xl font-bold text-foreground">
                     {visitorStats?.total || 0} <span className="text-sm font-normal text-muted-foreground">/ {visitorStats?.uniqueTotal || 0}</span>
                   </p>
@@ -1164,7 +1172,7 @@ const AdminDashboard = () => {
                   <TrendingUp className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Hits / Unik Hari Ini</p>
+                  <p className="text-sm text-muted-foreground">Pengunjung Hari Ini</p>
                   <p className="text-2xl font-bold text-foreground">
                     {visitorStats?.today || 0} <span className="text-sm font-normal text-muted-foreground">/ {visitorStats?.uniqueToday || 0}</span>
                   </p>
@@ -1178,7 +1186,7 @@ const AdminDashboard = () => {
                   <BarChart3 className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Rata-rata Harian (Unik)</p>
+                  <p className="text-sm text-muted-foreground">Rata-rata Pengunjung</p>
                   <p className="text-2xl font-bold text-foreground">
                     {visitorStats ? Math.round(visitorStats.last7Days.reduce((acc: any, curr: any) => acc + curr.uniques, 0) / 7) : 0}
                   </p>
@@ -1224,6 +1232,46 @@ const AdminDashboard = () => {
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6">
+                  <Globe className="h-5 w-5 text-primary" />
+                  <h3 className="font-display text-lg text-foreground">Top Negara</h3>
+                </div>
+                <div className="space-y-4">
+                  {visitorStats?.topCountries && visitorStats.topCountries.length > 0 ? (
+                    visitorStats.topCountries.map((loc, i) => (
+                      <div key={i} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                        <span className="text-sm text-foreground font-body">{loc.name}</span>
+                        <span className="text-sm font-semibold text-primary">{loc.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">Belum ada data lokasi.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <h3 className="font-display text-lg text-foreground">Top Kota</h3>
+                </div>
+                <div className="space-y-4">
+                  {visitorStats?.topCities && visitorStats.topCities.length > 0 ? (
+                    visitorStats.topCities.map((loc, i) => (
+                      <div key={i} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                        <span className="text-sm text-foreground font-body">{loc.name}</span>
+                        <span className="text-sm font-semibold text-primary">{loc.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">Belum ada data lokasi.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
