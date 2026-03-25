@@ -1,4 +1,4 @@
-import {Mail, MapPin, Send} from "lucide-react";
+import {Mail,MapPin, Send} from "lucide-react";
 import {useState} from "react";
 import { toast } from "sonner";
 import StudioMap from "./StudioMap";
@@ -53,17 +53,12 @@ const ContactSection = () => {
           </p>
 
           <div className="space-y-6">
-            {[
-              {icon: Mail, text: "studiofotowarna@gmail.com"},
-              {icon: MapPin, text: "Jl. Setiawan, Ledoksari, Tumpang, Kec. Tumpang, Kab. Malang, Jawa Timur 65156"},
-            ].map(({icon: Icon, text}) => (
-              <div key={text} className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center border border-border">
-                  <Icon className="h-4 w-4 text-primary" />
-                </div>
-                <span className="font-body text-sm text-foreground sm:text-base">{text}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center border border-border">
+                <Mail className="h-4 w-4 text-primary" />
               </div>
-            ))}
+              <span className="font-body text-sm text-foreground sm:text-base">studiofotowarna@gmail.com</span>
+            </div>
           </div>
         </div>
 
