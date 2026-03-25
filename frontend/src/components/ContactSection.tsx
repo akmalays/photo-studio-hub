@@ -1,7 +1,7 @@
 import {Mail, MapPin, Send} from "lucide-react";
 import {useState} from "react";
-
 import { toast } from "sonner";
+import StudioMap from "./StudioMap";
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({name: "", email: "", message: ""});
@@ -115,6 +115,15 @@ const ContactSection = () => {
             )}
           </button>
         </form>
+      </div>
+
+      {/* Interactive Map */}
+      <div className="mt-12 md:mt-16">
+        <div className="mb-4 flex items-center gap-3">
+          <MapPin className="h-4 w-4 text-primary" />
+          <p className="font-body text-sm uppercase tracking-[0.2em] text-muted-foreground">Lokasi Studio</p>
+        </div>
+        <StudioMap />
       </div>
     </section>
   );
