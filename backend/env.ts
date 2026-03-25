@@ -20,5 +20,6 @@ export const env = {
   supabaseServiceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
 
   notificationApiKey: process.env.NOTIFICATION_API_KEY || process.env.LOVABLE_API_KEY,
+  adminSecret: process.env.ADMIN_SECRET || "GANTI_INI_DI_ENV",
 };
 

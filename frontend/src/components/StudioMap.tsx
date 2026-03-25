@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Navigation } from "lucide-react";
 
-// wArnA Studio coordinates - Depan Gedung PGRI Tumpang, Kab. Malang
-const STUDIO_LAT = -7.9983;
-const STUDIO_LNG = 112.8028;
+// wArnA Studio coordinates - Jl. Setiawan, Ledoksari, Tumpang, Kab. Malang
+const STUDIO_LAT = -7.9923;
+const STUDIO_LNG = 112.8076;
 const STUDIO_NAME = "wArnA Studio";
 
 const StudioMap = () => {
@@ -96,7 +96,7 @@ const StudioMap = () => {
           min-width: 160px;
         ">
           <p style="font-weight: 700; font-size: 14px; color: #d4af37; margin: 0 0 4px 0;">📍 wArnA Studio</p>
-          <p style="font-size: 11px; color: #aaa; margin: 0 0 8px 0; line-height: 1.4;">Depan Gedung PGRI Tumpang,<br/>Kab. Malang</p>
+          <p style="font-size: 11px; color: #aaa; margin: 0 0 8px 0; line-height: 1.4;">Jl. Setiawan, Ledoksari, Tumpang,<br/>Kec. Tumpang, Kab. Malang 65156</p>
           <a 
             href="https://www.google.com/maps/dir/?api=1&destination=${STUDIO_LAT},${STUDIO_LNG}"
             target="_blank"

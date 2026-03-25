@@ -70,7 +70,7 @@ app.get("/api/stats/summary", stats.getStatsSummary);
 app.post("/api/setup/cleanup", async (req, res) => {
   try {
     const { secret } = req.body;
-    if (secret !== "warna-2026") return res.status(401).json({ error: "Invalid secret" });
+    if (secret !== env.adminSecret) return res.status(401).json({ error: "Invalid secret" });
     
     const { error } = await supabaseAdmin.from("user_roles").delete().not("role", "is", null);
     if (error) throw error;
@@ -85,11 +85,11 @@ app.post("/api/setup/cleanup", async (req, res) => {
 app.post("/api/setup/admin", async (req, res) => {
   try {
     const { secret, email, password, full_name } = req.body;
-    if (secret !== "warna-2026") return res.status(401).json({ error: "Invalid secret" });
+    if (secret !== env.adminSecret) return res.status(401).json({ error: "Invalid secret" });
     
-    const targetEmail = email || "admin@warnastudio.com";
-    const targetPassword = password || "admin123456";
-    const targetName = full_name || "Admin Studio";
+    const targetEmail = email ;
+    const targetPassword = password;
+    const targetName = full_name;
 
     const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: targetEmail,

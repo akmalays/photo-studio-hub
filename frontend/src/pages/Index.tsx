@@ -108,15 +108,16 @@ const Index = () => {
           "email": "studiofotowarna@gmail.com",
           "address": {
             "@type": "PostalAddress",
-            "streetAddress": "Depan Gedung PGRI Tumpang",
-            "addressLocality": "Tumpang",
+            "streetAddress": "Jl. Setiawan, Ledoksari, Tumpang",
+            "addressLocality": "Kec. Tumpang",
+            "postalCode": "65156",
             "addressRegion": "Jawa Timur",
             "addressCountry": "ID"
           },
           "geo": {
             "@type": "GeoCoordinates",
-            "latitude": "-7.9982",
-            "longitude": "112.8029"
+            "latitude": "-7.9923",
+            "longitude": "112.8076"
           },
           "openingHours": "Mo-Sa 08:00-17:00",
           "image": OG_IMAGE,

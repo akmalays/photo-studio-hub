@@ -55,7 +55,7 @@ const ContactSection = () => {
           <div className="space-y-6">
             {[
               {icon: Mail, text: "studiofotowarna@gmail.com"},
-              {icon: MapPin, text: "Depan Gedung PGRI Tumpang, Kab.Malang, Jawa Timur, Indonesia"},
+              {icon: MapPin, text: "Jl. Setiawan, Ledoksari, Tumpang, Kec. Tumpang, Kab. Malang, Jawa Timur 65156"},
             ].map(({icon: Icon, text}) => (
               <div key={text} className="flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center border border-border">
