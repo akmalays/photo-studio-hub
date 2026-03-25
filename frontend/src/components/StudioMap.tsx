@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
 import { Navigation } from "lucide-react";
 
-// wArnA Studio coordinates - Jl. Setiawan, Ledoksari, Tumpang, Kab. Malang
-const STUDIO_LAT = -7.9923;
-const STUDIO_LNG = 112.8076;
-const STUDIO_NAME = "wArnA Studio";
+// wArnA Studio - Jl. Setiawan, Ledoksari, Tumpang, Kab. Malang
+const STUDIO_LAT = -7.9905;
+const STUDIO_LNG = 112.7990;
+const GMAPS_QUERY = "Studio+Foto+Warna+Tumpang+Kabupaten+Malang";
 
 const StudioMap = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
 
   const openGoogleMapsDirections = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${STUDIO_LAT},${STUDIO_LNG}&destination_place_id=wArnA+Studio+Tumpang+Malang`;
+    // Use place name search so Google Maps finds the correct business
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${GMAPS_QUERY}`;
     window.open(url, "_blank");
   };
 
@@ -98,7 +99,7 @@ const StudioMap = () => {
           <p style="font-weight: 700; font-size: 14px; color: #d4af37; margin: 0 0 4px 0;">📍 wArnA Studio</p>
           <p style="font-size: 11px; color: #aaa; margin: 0 0 8px 0; line-height: 1.4;">Jl. Setiawan, Ledoksari, Tumpang,<br/>Kec. Tumpang, Kab. Malang 65156</p>
           <a 
-            href="https://www.google.com/maps/dir/?api=1&destination=${STUDIO_LAT},${STUDIO_LNG}"
+            href="https://www.google.com/maps/dir/?api=1&destination=${GMAPS_QUERY}"
             target="_blank"
             rel="noopener"
             style="
