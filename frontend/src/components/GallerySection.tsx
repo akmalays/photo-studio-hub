@@ -41,7 +41,7 @@ const defaultPhotos: PhotoItem[] = [
   { src: gallery6, title: "Architecture", category: "Arsitektur", span: "" },
 ];
 
-const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
+const ServiceCarousel = ({ category, intervalMs = 5000 }: { category: ServiceCategory; intervalMs?: number }) => {
   const [current, setCurrent] = useState(0);
   const [sliding, setSliding] = useState<"left" | "right" | null>(null);
 
@@ -52,7 +52,7 @@ const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
     
     const interval = setInterval(() => {
       slide("next");
-    }, 5000); // Change every 2 seconds as requested
+    }, intervalMs);
 
     return () => clearInterval(interval);
   }, [photos.length, current]); // Re-run when current changes to reset timer for smoother flow if user clicks manually
@@ -71,11 +71,11 @@ const ServiceCarousel = ({ category }: { category: ServiceCategory }) => {
   };
 
   return (
-    <div className="group relative w-full overflow-hidden rounded-sm bg-muted/20 h-[300px] sm:h-[400px] flex items-center justify-center">
+    <div className="group relative w-full flex items-center justify-center overflow-hidden rounded-sm">
       <img
         src={photos[current].image_url}
         alt={category.name}
-        className={`max-h-full max-w-full object-contain transition-all duration-300 ease-in-out ${
+        className={`max-h-[420px] w-auto max-w-full block transition-all duration-300 ease-in-out ${
           sliding === "left"
             ? "-translate-x-8 opacity-0"
             : sliding === "right"
@@ -323,34 +323,24 @@ const GallerySection = () => {
             </p>
           </div>
 
-          <div className="space-y-12 md:space-y-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10">
             {serviceCategories.map((cat, idx) => (
-              <div
-                key={cat.id}
-                className={`flex flex-col gap-6 md:gap-10 ${
-                  idx % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                } items-center`}
-              >
+              <div key={cat.id} className="flex flex-col gap-4">
                 {/* Photo carousel */}
-                <div className="w-full md:w-1/2">
-                  {cat.photos.length > 0 ? (
-                    <ServiceCarousel category={cat} />
-                  ) : (
-                    <div className="flex aspect-[4/3] w-full items-center justify-center rounded-sm border border-dashed border-border bg-card">
-                      <p className="font-body text-sm text-muted-foreground">
-                        Belum ada foto
-                      </p>
-                    </div>
-                  )}
-                </div>
-
+                {cat.photos.length > 0 ? (
+                  <ServiceCarousel category={cat} intervalMs={4000 + idx * 1500} />
+                ) : (
+                  <div className="flex aspect-[4/3] w-full items-center justify-center rounded-sm border border-dashed border-border bg-card">
+                    <p className="font-body text-sm text-muted-foreground">Belum ada foto</p>
+                  </div>
+                )}
                 {/* Description */}
-                <div className="w-full md:w-1/2">
-                  <h3 className="mb-3 font-display text-xl font-semibold text-foreground sm:text-2xl">
+                <div>
+                  <h3 className="mb-2 font-display text-lg font-semibold text-foreground sm:text-xl">
                     {cat.name}
                   </h3>
-                  <div className="mb-4 h-[2px] w-12 bg-primary" />
-                  <p className="font-body text-sm leading-relaxed text-muted-foreground sm:text-base">
+                  <div className="mb-3 h-[2px] w-10 bg-primary" />
+                  <p className="font-body text-sm leading-relaxed text-muted-foreground">
                     {cat.description}
                   </p>
                 </div>
