@@ -73,9 +73,9 @@ const Index = () => {
       <Helmet>
         {/* === Primary SEO === */}
         <html lang="id" />
-        <title>wArnA Studio — Jasa Foto & Videografi di Malang</title>
-        <meta name="description" content="wArnA Studio menawarkan jasa fotografi profesional di Kabupaten Malang: foto pernikahan, studio, event, ID card, cetak foto & lebih. Hubungi kami sekarang!" />
-        <meta name="keywords" content="studio foto malang, jasa foto malang, fotografer malang, foto pernikahan malang, foto wisuda malang, cetak foto malang, warna studio, foto id card malang" />
+        <title>wArnA Studio — Jasa Foto Studio &amp; Cetak di Malang</title>
+        <meta name="description" content="wArnA Studio: jasa foto studio, foto ID card, cetak foto, foto event sekolah, dan cetak dokumen di Kabupaten Malang. Kualitas terbaik, harga terjangkau!" />
+        <meta name="keywords" content="studio foto malang, foto id card malang, cetak foto malang, foto event sekolah malang, cetak dokumen malang, foto keluarga malang, warna studio tumpang" />
         <link rel="canonical" href={SITE_URL} />
         <meta name="robots" content="index, follow" />
         <meta name="google-site-verification" content="gq9ioB-O2X2slcKRarHdWFFz5X5zVe1BPo3EOlGBFhI" />
@@ -83,8 +83,8 @@ const Index = () => {
         {/* === Open Graph (Facebook, WhatsApp) === */}
         <meta property="og:type" content="business.business" />
         <meta property="og:site_name" content="wArnA Studio" />
-        <meta property="og:title" content="wArnA Studio — Jasa Foto & Videografi di Malang" />
-        <meta property="og:description" content="Studio foto profesional di Kabupaten Malang. Melayani foto pernikahan, event, ID card, dan cetak foto." />
+        <meta property="og:title" content="wArnA Studio — Jasa Foto Studio &amp; Cetak di Malang" />
+        <meta property="og:description" content="Foto studio, ID card, cetak foto, event sekolah & cetak dokumen profesional di Kab. Malang." />
         <meta property="og:url" content={SITE_URL} />
         <meta property="og:image" content={OG_IMAGE} />
         <meta property="og:image:width" content="1200" />
@@ -93,8 +93,8 @@ const Index = () => {
 
         {/* === Twitter Card === */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="wArnA Studio — Jasa Foto Malang" />
-        <meta name="twitter:description" content="Jasa fotografi profesional di Kab. Malang. Foto pernikahan, event, studio, dan lebih." />
+        <meta name="twitter:title" content="wArnA Studio — Foto Studio &amp; Cetak Malang" />
+        <meta name="twitter:description" content="Jasa foto studio, ID card, cetak foto & event sekolah di Kab. Malang, Jawa Timur." />
         <meta name="twitter:image" content={OG_IMAGE} />
 
         {/* === Local Business Schema (JSON-LD) === */}

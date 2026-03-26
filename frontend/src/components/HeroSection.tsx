@@ -2,8 +2,47 @@ import { useState, useEffect } from "react";
 import heroPhoto from "@/assets/hero-photo.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
+const SERVICES = [
+  "Foto Studio",
+  "Foto ID Card & KTP",
+  "Cetak Foto",
+  "Foto Event Sekolah",
+  "Cetak Dokumen",
+  "Foto Keluarga",
+];
+
+const useTypingEffect = (words: string[], typingSpeed = 80, deletingSpeed = 50, pauseMs = 1800) => {
+  const [displayed, setDisplayed] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = words[wordIndex];
+    let timeout: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && displayed === current) {
+      // Pause at full word then start deleting
+      timeout = setTimeout(() => setIsDeleting(true), pauseMs);
+    } else if (isDeleting && displayed === "") {
+      // Move to next word
+      setIsDeleting(false);
+      setWordIndex((i) => (i + 1) % words.length);
+    } else {
+      const speed = isDeleting ? deletingSpeed : typingSpeed;
+      timeout = setTimeout(() => {
+        setDisplayed(isDeleting ? current.slice(0, displayed.length - 1) : current.slice(0, displayed.length + 1));
+      }, speed);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayed, isDeleting, wordIndex, words, typingSpeed, deletingSpeed, pauseMs]);
+
+  return displayed;
+};
+
 const HeroSection = () => {
   const [collagePhotos, setCollagePhotos] = useState<string[]>([]);
+  const typedService = useTypingEffect(SERVICES);
 
   useEffect(() => {
     const fetchPhotos = async () => {
@@ -16,9 +55,7 @@ const HeroSection = () => {
         if (servPhotos) allPhotos.push(...servPhotos.map(p => p.image_url));
         
         if (allPhotos.length > 0) {
-          // Shuffle the photos to make the collage dynamic
           const shuffled = allPhotos.sort(() => 0.5 - Math.random());
-          // Take up to 6 photos for a 3x2 or 2x3 grid
           setCollagePhotos(shuffled.slice(0, 6));
         }
       } catch (error) {
@@ -30,20 +67,13 @@ const HeroSection = () => {
 
   const getGridStyles = (index: number) => {
     switch (index) {
-      case 0:
-        return "col-span-2 row-span-2 sm:col-span-2 sm:row-span-2"; // Large feature image
-      case 1:
-        return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
-      case 2:
-        return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
-      case 3:
-        return "col-span-2 row-span-1 sm:col-span-1 sm:row-span-1"; // Wide on mobile, standard on desktop
-      case 4:
-        return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
-      case 5:
-        return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
-      default:
-        return "col-span-1 row-span-1";
+      case 0: return "col-span-2 row-span-2 sm:col-span-2 sm:row-span-2";
+      case 1: return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
+      case 2: return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
+      case 3: return "col-span-2 row-span-1 sm:col-span-1 sm:row-span-1";
+      case 4: return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
+      case 5: return "col-span-1 row-span-1 sm:col-span-1 sm:row-span-1";
+      default: return "col-span-1 row-span-1";
     }
   };
 
@@ -65,7 +95,7 @@ const HeroSection = () => {
         ) : (
           <img
             src={heroPhoto}
-            alt="Layanan Fotografi dan Dokumen"
+            alt="Layanan Foto Studio dan Cetak"
             className="h-full w-full object-cover object-[50%_25%]"
           />
         )}
@@ -74,8 +104,10 @@ const HeroSection = () => {
 
       <div className="relative z-10 flex h-full items-center px-4 pb-0 sm:items-end sm:px-8 sm:pb-24 md:items-center md:pb-0 md:px-16 lg:px-24">
         <div className="max-w-2xl animate-fade-up">
-          <p className="mb-3 font-body text-xs uppercase tracking-[0.3em] text-primary sm:mb-4 sm:text-sm">
-            Layanan Visual & Cetak
+          {/* Typing animation label */}
+          <p className="mb-3 font-body text-xs uppercase tracking-[0.3em] text-primary sm:mb-4 sm:text-sm h-5 flex items-center gap-1">
+            <span>{typedService}</span>
+            <span className="inline-block w-0.5 h-3.5 bg-primary animate-pulse" />
           </p>
           <h1 className="mb-4 font-display text-4xl font-semibold leading-tight text-foreground sm:mb-6 sm:text-5xl md:text-6xl lg:text-7xl">
             Solusi Kreatif
