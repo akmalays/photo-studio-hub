@@ -66,7 +66,6 @@ const AdminDashboard = () => {
   const [serviceFile, setServiceFile] = useState<File | null>(null);
   const [servicePreview, setServicePreview] = useState<string | null>(null);
   const [uploadingService, setUploadingService] = useState(false);
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const [activeSection, setActiveSection] = useState<"portfolio" | "services" | "announcements" | "stats">("portfolio");
 
   // Stats state

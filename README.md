@@ -1,17 +1,17 @@
 # wArna Studio Hub 📸
 
-Sistem manajemen terintegrasi untuk wArna Studio, mencakup Frontend (User Interface) dan Backend (API & Database).
+Sistem manajemen terintegrasi untuk wArna Studio, dikembangkan dengan arsitektur **Serverless** modern berbasis React, Vite, dan Supabase.
 
-## Struktur Proyek
+## Arsitektur Proyek (Serverless)
 
-Proyek ini menggunakan **NPM Workspaces** untuk memisahkan frontend dan backend secara mandiri:
+Proyek ini telah diperbarui menjadi **Arsitektur Serverless** yang sangat ringan, tidak lagi menggunakan Node.js Backend Server (Railway) khusus secara terpisah:
 
-- **`frontend/`**: Aplikasi web berbasis React + Vite + Tailwind CSS.
-- **`backend/`**: Server API berbasis Express (Node.js) + Supabase Edge Functions.
+- **Frontend**: Aplikasi web interaktif berbasis React + Vite + Tailwind CSS.
+- **Database & API**: Ditangani langsung dari browser via **Supabase Client SDK**. Semua Autentikasi Admin dan Interaksi Data (CRUD) dikunci dan dilindungi melalui kebijakan bawaan **Row Level Security (RLS)** di sisi dasbor Supabase.
 
 ## Persiapan & Instalasi
 
-Pastikan Anda memiliki Node.js (v20+) dan NPM terinstal. Bun direkomendasikan untuk performa lebih cepat.
+Pastikan Anda memiliki Node.js (v20+) terinstal. **Bun** sangat direkomendasikan untuk performa instalasi dan kompilasi yang jauh lebih cepat.
 
 1.  **Clone Repository**
     ```sh
@@ -20,54 +20,50 @@ Pastikan Anda memiliki Node.js (v20+) dan NPM terinstal. Bun direkomendasikan un
     ```
 
 2.  **Konfigurasi Environment**
-    Salin file `.env.example` menjadi `.env` di root folder dan isi variabel yang diperlukan (Supabase URL, Keys, dll).
+    Salin file `.env.example` ke sebuah file baru bernama `.env` di folder utama (root) lalu isikan variabel wajib:
+    - `VITE_SUPABASE_URL`
+    - `VITE_SUPABASE_ANON_KEY`
+    - `SUPABASE_SERVICE_ROLE_KEY` / `VITE_SUPABASE_SERVICE_ROLE_KEY` *(Hanya jika ingin memakai fitur Script Backup)*
 
 3.  **Instalasi Dependencies**
     Jalankan perintah ini di root folder:
     ```sh
-    npm install
+    bun install
+    # atau npm install
     ```
 
 ## Cara Menjalankan (Development)
 
-Anda dapat menjalankan seluruh sistem atau hanya bagian tertentu dari root folder:
-
-- **Menjalankan Keduanya (Frontend & Backend)**
-  ```sh
-  npm run dev
-  ```
-- **Hanya Frontend** (Web UI di port 8080)
-  ```sh
-  npm run dev:frontend
-  ```
-- **Hanya Backend** (API di port 8080/Railway default)
-  ```sh
-  npm run dev:backend
-  ```
-
-## Manajemen Data (Backup)
-
-Terdapat fitur utilitas untuk mengunduh (*backup*) semua tabel utama dari Supabase secara otomatis menjadi file `.json`.
-File hasil backup secara otomatis masuk ke folder `backend/backups/` dan dikecualikan (di-ignore) dari git.
-
-Untuk menjalankan backup:
+Untuk masuk ke mode *development* web interaktif (Frontend), jalankan perintah:
 ```sh
-cd backend
-npm run backup
-# atau
-# bun run backup
+bun run dev
+# atau npm run dev
 ```
+Website wArna Studio secara default dapat diakses pada bilah URL browser via `http://localhost:3000`. 
 
-## Deployment
+## Manajemen Log Data (Backup Supabase)
 
-### Backend (Railway)
-Proyek ini sudah dikonfigurasi untuk Railway menggunakan `nixpacks.toml`. Cukup hubungkan repo ini ke Railway dan dia akan otomatis mendeteksi script `build` dan `start` di root.
+Terdapat utilitas rahasia (*script*) khusus untuk mengunduh, mengekstrak, dan mencadangkan keseluruhan data tabel penting dari server Supabase Anda ke dalam bentuk file lokal `.json`. Data riwayat backup akan diabaikan secara aman oleh Git (tidak terdorong ke GitHub).
 
-### Frontend
-Dapat dideploy ke Vercel, Netlify, atau platform statis lainnya dengan mengarahkan root directory ke folder `frontend/` dan menggunakan build command `npm run build`.
+Untuk menginisiasi *auto-backup*, jalankan pada terminal Anda:
+```sh
+bun run backup
+# atau npm run backup
+```
+File salinan baru (`database-backup-[tanggal].json`) akan otomatis dibuat di jalur `supabase/backups/`.
 
-## Teknologi yang Digunakan
+## Pedoman Deployment
 
-- **Frontend**: Vite, React, TypeScript, shadcn/ui, Tailwind CSS.
-- **Backend**: Node.js, Express, tsx, Bun.
-- **Database/Auth**: Supabase.
+Aplikasi Frontend wArna Studio kini siap dipublikasikan secara **Instan & 100% Gratis** ke layanan Cloud Modern Global (seperti **Vercel**, **Netlify**, atau **Cloudflare Pages**).
+
+- **Panduan Setup di Vercel/Netlify:**
+    - Hubungkan repo GitHub ini.
+    - Setel Build Command: `npm run build` *(atau `bun run build` jika diatur)* 
+    - Setel Output/Publish Directory: `frontend/dist` *(atau cukup biarkan framework automation vite mendeteksinya)*
+    - Masukkan Environment Variables (`VITE_SUPABASE...`) ke dasbor Cloud mereka.
+
+## Teknologi Utama
+
+- **Infrastruktur Logic**: React 18, TypeScript, React Router Dom, React Helmet Async.
+- **Desain & Interface Visual**: Tailwind CSS, shadcn/ui, Radix UI Primitives, Framer Motion, Recharts.
+- **Database & Backend as a Service**: Supabase (PostgreSQL, Realtime, Bucket Storage).
