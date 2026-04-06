@@ -45,6 +45,19 @@ Anda dapat menjalankan seluruh sistem atau hanya bagian tertentu dari root folde
   npm run dev:backend
   ```
 
+## Manajemen Data (Backup)
+
+Terdapat fitur utilitas untuk mengunduh (*backup*) semua tabel utama dari Supabase secara otomatis menjadi file `.json`.
+File hasil backup secara otomatis masuk ke folder `backend/backups/` dan dikecualikan (di-ignore) dari git.
+
+Untuk menjalankan backup:
+```sh
+cd backend
+npm run backup
+# atau
+# bun run backup
+```
+
 ## Deployment
 
 ### Backend (Railway)
