@@ -3,25 +3,22 @@
   "private": true,
   "version": "0.0.0",
   "workspaces": [
-    "frontend",
-    "backend"
+    "frontend"
   ],
   "engines": {
     "node": ">=20",
     "npm": ">=10"
   },
   "scripts": {
-    "dev:frontend": "bun run --cwd frontend dev",
-    "dev:backend": "bun run --cwd backend dev",
-    "dev": "concurrently \"bun run dev:frontend\" \"bun run dev:backend\"",
-    "build:frontend": "bun run --cwd frontend build",
-    "build:backend": "bun run --cwd backend build",
-    "build": "bun run build:backend",
-    "start": "bun run --cwd backend start",
-    "install:all": "bun install"
+    "dev": "bun run --cwd frontend dev",
+    "build": "bun run --cwd frontend build",
+    "preview": "bun run --cwd frontend preview",
+    "install:all": "bun install",
+    "backup": "bun run supabase/backup.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.42.1",
+    "@supabase/supabase-js": "^2.101.1",
     "@types/node": "^22.14.0",
     "concurrently": "^8.2.2",
     "typescript": "^5.8.3"

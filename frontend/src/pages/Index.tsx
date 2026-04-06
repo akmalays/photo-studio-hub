@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import { Helmet } from "react-helmet-async";
+import { supabase } from "@/integrations/supabase/client";
 
 import logo from "@/assets/logo-warna.png";
 import AboutSection from "@/components/AboutSection";
@@ -54,16 +55,36 @@ const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
   useEffect(() => {
     // Track visit on mount
-    fetch(`${apiUrl}/api/stats/track`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ page_path: "/", user_agent: navigator.userAgent })
-    }).catch(err => console.error("Stats tracking failed:", err));
-  }, [apiUrl]);
+    const track = async () => {
+      try {
+        let country = "Unknown";
+        let city = "Unknown";
+        let ip_hash = "frontend-visitor-" + Math.random().toString(36).substring(7); // basic fallback
+        
+        try {
+          // get geo local from free IP api
+          const res = await fetch("https://ipapi.co/json/");
+          const geo = await res.json();
+          if (geo.ip) ip_hash = geo.ip;
+          if (geo.country_name) country = geo.country_name;
+          if (geo.city) city = geo.city;
+        } catch (e) {}
+
+        await supabase.from("visitor_stats").insert([{
+          page_path: "/",
+          user_agent: navigator.userAgent,
+          ip_hash,
+          country,
+          city
+        }]);
+      } catch (err) {
+        console.error("Stats tracking failed:", err);
+      }
+    };
+    track();
+  }, []);
 
   const SITE_URL = "https://warnastudio.web.id";
   const OG_IMAGE = `${SITE_URL}/og-image.jpg`;

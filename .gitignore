@@ -37,4 +37,4 @@ env
 *.sw?
 
 # Database Backups
-backend/backups/
+supabase/backups/

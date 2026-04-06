@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Announcement {
   id: string;
@@ -11,21 +12,23 @@ const SEPARATOR = "✦";
 
 const TickerBanner = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`${apiUrl}/api/announcements`);
-        if (!res.ok) return;
-        const data: Announcement[] = await res.json();
-        setAnnouncements(data.filter((a) => a.is_active));
+        const { data, error } = await supabase
+          .from("announcements")
+          .select("*")
+          .eq("is_active", true)
+          .order("display_order", { ascending: true });
+        
+        if (error) throw error;
+        setAnnouncements(data || []);
       } catch {
         // Silently fail – ticker is non-critical
       }
     };
     load();
-  }, [apiUrl]);
+  }, []);
 
   if (announcements.length === 0) return null;
 
