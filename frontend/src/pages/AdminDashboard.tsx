@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LogOut, Plus, Trash2, Image, Settings, ChevronDown, ChevronUp, Bell, Mail, X, Edit, Loader2, BarChart3, Users, TrendingUp, Globe, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PortfolioCategory {
   id: string;
@@ -120,36 +121,78 @@ const AdminDashboard = () => {
     (msg) => new Date(msg.created_at) > new Date(lastReadAt)
   ).length;
 
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: "", description: "", onConfirm: () => {} });
+
+  const confirmAction = (title: string, description: string, onConfirm: () => void) => {
+    setConfirmDialog({ isOpen: true, title, description, onConfirm });
+  };
+
+
   const fetchItems = useCallback(async () => {
     try {
       const [catRes, photoRes] = await Promise.all([
-        fetch(`${apiUrl}/api/portfolio/categories`),
-        fetch(`${apiUrl}/api/portfolio/photos`),
+        supabase.from('portfolio_categories').select('*').order('display_order', {ascending: true}),
+        supabase.from('portfolio_photos').select('*').order('display_order', {ascending: true})
       ]);
-      if (catRes.ok && photoRes.ok) {
-        setPortfolioCategories(await catRes.json());
-        setPortfolioPhotos(await photoRes.json());
-      }
+      setPortfolioCategories(catRes.data || []);
+      setPortfolioPhotos(photoRes.data || []);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setLoading(false);
     }
-  }, [apiUrl]);
+  }, []);
 
   const fetchStats = useCallback(async () => {
     setFetchingStats(true);
     try {
-      const res = await fetch(`${apiUrl}/api/stats/summary`);
-      if (!res.ok) throw new Error("Gagal mengambil data statistik");
-      const data = await res.json();
-      setVisitorStats(data);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase.from('visitor_stats').select('*');
+      if (error) throw error;
+      
+      const visits = data || [];
+      const uniques = new Set(visits.map(v => v.ip_hash));
+      const todayVisits = visits.filter(v => new Date(v.created_at) >= today);
+      const todayUniques = new Set(todayVisits.map(v => v.ip_hash));
+      
+      const countriesMap: Record<string, number> = {};
+      const citiesMap: Record<string, number> = {};
+      visits.forEach(d => {
+        if (d.country) countriesMap[d.country] = (countriesMap[d.country] || 0) + 1;
+        if (d.city) citiesMap[d.city] = (citiesMap[d.city] || 0) + 1;
+      });
+
+      const topCountries = Object.keys(countriesMap).map(k => ({ name: k, count: countriesMap[k] })).sort((a, b) => b.count - a.count).slice(0, 5);
+      const topCities = Object.keys(citiesMap).map(k => ({ name: k, count: citiesMap[k] })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const start = new Date(); start.setDate(start.getDate() - i); start.setHours(0, 0, 0, 0);
+        const end = new Date(start); end.setHours(23, 59, 59, 999);
+        const dayVisits = visits.filter(v => {
+          const d = new Date(v.created_at);
+          return d >= start && d <= end;
+        });
+        last7Days.push({
+          date: start.toLocaleDateString("id-ID", { weekday: "short" }),
+          hits: dayVisits.length,
+          uniques: new Set(dayVisits.map(d => d.ip_hash)).size
+        });
+      }
+
+      setVisitorStats({ total: visits.length, uniqueTotal: uniques.size, today: todayVisits.length, uniqueToday: todayUniques.size, topCountries, topCities, last7Days });
     } catch (error: any) {
       console.error(error.message);
     } finally {
       setFetchingStats(false);
     }
-  }, [apiUrl]);
+  }, []);
 
   useEffect(() => {
     if (activeSection === "stats") {
@@ -159,54 +202,43 @@ const AdminDashboard = () => {
 
   const fetchServices = useCallback(async () => {
     try {
-      const catRes = await fetch(`${apiUrl}/api/services/categories`);
-      if (!catRes.ok) throw new Error("Gagal mengambil kategori");
-      const cats = await catRes.json();
-      setServiceCategories(cats || []);
-
-      const photoRes = await fetch(`${apiUrl}/api/services/photos`);
-      if (!photoRes.ok) throw new Error("Gagal mengambil foto");
-      const photos = await photoRes.json();
-      setServicePhotos(photos || []);
+      const [catRes, photoRes] = await Promise.all([
+        supabase.from('service_categories').select('*').order('display_order', {ascending: true}),
+        supabase.from('service_photos').select('*').order('display_order', {ascending: true})
+      ]);
+      setServiceCategories(catRes.data || []);
+      setServicePhotos(photoRes.data || []);
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [apiUrl]);
+  }, []);
 
-  const handleDeleteMessage = async (id: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const response = await fetch(`${apiUrl}/api/contact/messages/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!response.ok) throw new Error("Gagal menghapus pesan");
-      setMessages(prev => prev.filter(m => m.id !== id));
-      toast.success("Pesan dihapus");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+  const handleDeleteMessage = (id: string) => {
+    confirmAction("Hapus Pesan", "Ini akan menghapus pesan secara permanen.", async () => {
+      try {
+        const { error } = await supabase.from('contact_messages').delete().eq('id', id);
+        if (error) throw error;
+        setMessages(prev => prev.filter(m => m.id !== id));
+        toast.success("Pesan berhasil dihapus");
+      } catch (err: any) {
+        toast.error("Gagal menghapus pesan: " + err.message);
+      }
+    });
   };
 
   const fetchAnnouncements = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/announcements`);
-      if (!res.ok) return;
-      setAnnouncements(await res.json());
+      const { data, error } = await supabase.from('announcements').select('*').order('display_order', {ascending: true});
+      if (error) throw error;
+      setAnnouncements(data || []);
     } catch(e) { console.error(e); }
-  }, [apiUrl]);
+  }, []);
 
   const handleCreateAnnouncement = async () => {
     if (!newAnnouncementText.trim()) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${apiUrl}/api/announcements`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ text: newAnnouncementText.trim(), is_active: true, display_order: announcements.length }),
-      });
-      if (!res.ok) throw new Error("Gagal membuat pengumuman");
+      const { error } = await supabase.from('announcements').insert([{ text: newAnnouncementText.trim(), is_active: true, display_order: announcements.length }]);
+      if (error) throw error;
       toast.success("Pengumuman ditambahkan!");
       setNewAnnouncementText("");
       fetchAnnouncements();
@@ -216,13 +248,8 @@ const AdminDashboard = () => {
   const handleUpdateAnnouncement = async () => {
     if (!editingAnnouncement || !editAnnouncementText.trim()) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${apiUrl}/api/announcements/${editingAnnouncement.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ text: editAnnouncementText.trim() }),
-      });
-      if (!res.ok) throw new Error("Gagal memperbarui pengumuman");
+      const { error } = await supabase.from('announcements').update({ text: editAnnouncementText.trim() }).eq('id', editingAnnouncement.id);
+      if (error) throw error;
       toast.success("Pengumuman diperbarui!");
       setEditingAnnouncement(null);
       fetchAnnouncements();
@@ -231,50 +258,36 @@ const AdminDashboard = () => {
 
   const handleToggleAnnouncement = async (ann: Announcement) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${apiUrl}/api/announcements/${ann.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ is_active: !ann.is_active }),
-      });
-      if (!res.ok) throw new Error("Gagal mengubah status");
+      const { error } = await supabase.from('announcements').update({ is_active: !ann.is_active }).eq('id', ann.id);
+      if (error) throw error;
       fetchAnnouncements();
     } catch(e: any) { toast.error(e.message); }
   };
 
-  const handleDeleteAnnouncement = async (id: string) => {
-    if (!confirm("Hapus pengumuman ini?")) return;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${apiUrl}/api/announcements/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (!res.ok) throw new Error("Gagal menghapus");
-      toast.success("Pengumuman dihapus");
-      fetchAnnouncements();
-    } catch(e: any) { toast.error(e.message); }
+  const handleDeleteAnnouncement = (id: string) => {
+    confirmAction("Hapus Pengumuman", "Pengumuman ini akan dihapus secara permanen.", async () => {
+      try {
+        const { error } = await supabase.from('announcements').delete().eq('id', id);
+        if (error) throw error;
+        toast.success("Pengumuman berhasil dihapus");
+        fetchAnnouncements();
+      } catch(e: any) { toast.error("Gagal menghapus pengumuman: " + e.message); }
+    });
   };
 
   const fetchMessages = useCallback(async () => {
     try {
       setFetchingMessages(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(`${apiUrl}/api/contact/messages`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!response.ok) throw new Error("Gagal mengambil pesan");
-      const data = await response.json();
-      console.log("Fetched messages:", data.length);
+      const { data, error } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      console.log("Fetched messages:", data?.length);
       setMessages(data || []);
     } catch (err: any) {
       console.error("Fetch messages error:", err);
     } finally {
       setFetchingMessages(false);
     }
-  }, [apiUrl]);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -331,12 +344,8 @@ const AdminDashboard = () => {
   const handleAddPortfolioCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${apiUrl}/api/portfolio/categories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: portfolioCatName, description: portfolioCatDesc, display_order: portfolioCategories.length }),
-      });
-      if (!response.ok) throw new Error("Gagal menambah kategori");
+      const { error } = await supabase.from('portfolio_categories').insert([{ name: portfolioCatName, description: portfolioCatDesc, display_order: portfolioCategories.length }]);
+      if (error) throw error;
       toast.success("Kategori portfolio ditambahkan!");
       setPortfolioCatName(""); setPortfolioCatDesc(""); setShowPortfolioCategoryForm(false);
       fetchItems();
@@ -349,12 +358,8 @@ const AdminDashboard = () => {
     e.preventDefault();
     if (!editingCategory) return;
     try {
-      const response = await fetch(`${apiUrl}/api/portfolio/categories/${editingCategory.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editCatName, description: editCatDesc }),
-      });
-      if (!response.ok) throw new Error("Gagal mengedit kategori");
+      const { error } = await supabase.from('portfolio_categories').update({ name: editCatName, description: editCatDesc }).eq('id', editingCategory.id);
+      if (error) throw error;
       toast.success("Kategori berhasil diedit!");
       setEditingCategory(null);
       fetchItems();
@@ -363,16 +368,17 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeletePortfolioCategory = async (id: string) => {
-    if (!confirm("Hapus kategori ini beserta semua fotonya?")) return;
-    try {
-      const response = await fetch(`${apiUrl}/api/portfolio/categories/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Gagal menghapus");
-      toast.success("Kategori dihapus");
-      fetchItems();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+  const handleDeletePortfolioCategory = (id: string) => {
+    confirmAction("Hapus Kategori", "Apakah Anda yakin ingin menghapus kategori portfolio ini beserta seluruh fotonya? Tindakan ini tidak dapat dibatalkan.", async () => {
+      try {
+        const { error } = await supabase.from('portfolio_categories').delete().eq('id', id);
+        if (error) throw error;
+        toast.success("Kategori berhasil dihapus!");
+        fetchItems();
+      } catch (err: any) {
+        toast.error("Gagal menghapus kategori: " + err.message);
+      }
+    });
   };
 
   const handlePortfolioFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -409,14 +415,10 @@ const AdminDashboard = () => {
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(fileName);
-        const response = await fetch(`${apiUrl}/api/portfolio/photos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category_id: categoryId, image_url: urlData.publicUrl, title: "", display_order: currentOrder++,
-          }),
-        });
-        if (!response.ok) throw new Error("Gagal simpan ke DB");
+        const { error: dbError } = await supabase.from('portfolio_photos').insert([{
+          category_id: categoryId, image_url: urlData.publicUrl, title: "", display_order: currentOrder++,
+        }]);
+        if (dbError) throw new Error("Gagal simpan ke DB");
         successCount++;
       } catch (err: any) {
         toast.error(`Gagal upload ${file.name}: ${err.message}`);
@@ -431,33 +433,30 @@ const AdminDashboard = () => {
     setUploadingPortfolio(false);
   };
 
-  const handleDeletePortfolioPhoto = async (photo: PortfolioPhoto) => {
-    if (!confirm("Hapus foto ini?")) return;
-    try {
-      const urlParts = photo.image_url.split("/");
-      const fileName = urlParts[urlParts.length - 1];
-      await supabase.storage.from("portfolio").remove([fileName]);
+  const handleDeletePortfolioPhoto = (photo: PortfolioPhoto) => {
+    confirmAction("Hapus Foto", "Apakah Anda yakin ingin menghapus foto portfolio ini secara permanen?", async () => {
+      try {
+        const urlParts = photo.image_url.split("/");
+        const fileName = urlParts[urlParts.length - 1];
+        await supabase.storage.from("portfolio").remove([fileName]);
 
-      const response = await fetch(`${apiUrl}/api/portfolio/photos/${photo.id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Gagal hapus dari DB");
-      toast.success("Foto dihapus");
-      fetchItems();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+        const { error } = await supabase.from('portfolio_photos').delete().eq('id', photo.id);
+        if (error) throw new Error("Gagal hapus dari DB");
+        toast.success("Foto berhasil dihapus!");
+        fetchItems();
+      } catch (err: any) {
+        toast.error("Gagal menghapus foto: " + err.message);
+      }
+    });
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${apiUrl}/api/services/categories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: catName, description: catDesc, display_order: serviceCategories.length,
-        }),
-      });
-      if (!response.ok) throw new Error("Gagal menyimpan kategori");
+      const { error } = await supabase.from('service_categories').insert([{
+        name: catName, description: catDesc, display_order: serviceCategories.length,
+      }]);
+      if (error) throw error;
       
       toast.success("Kategori ditambahkan!");
       setCatName(""); setCatDesc(""); setShowCategoryForm(false);
@@ -467,17 +466,18 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Hapus kategori ini beserta semua fotonya?")) return;
-    // Delete photos from storage
-    const catPhotos = servicePhotos.filter((p) => p.category_id === id);
-    for (const p of catPhotos) {
-      const urlParts = p.image_url.split("/");
-      const fileName = urlParts[urlParts.length - 1];
-      await supabase.storage.from("portfolio").remove([fileName]);
-    }
-    const { error } = await fetch(`${apiUrl}/api/services/categories/${id}`, { method: "DELETE" }).then(res => res.json());
-    if (error) { toast.error("Gagal menghapus"); } else { toast.success("Kategori dihapus"); fetchServices(); }
+  const handleDeleteCategory = (id: string) => {
+    confirmAction("Hapus Jasa", "Apakah Anda yakin ingin menghapus kategori jasa ini beserta seluruh fotonya? Tindakan ini tidak dapat dibatalkan.", async () => {
+      // Delete photos from storage
+      const catPhotos = servicePhotos.filter((p) => p.category_id === id);
+      for (const p of catPhotos) {
+        const urlParts = p.image_url.split("/");
+        const fileName = urlParts[urlParts.length - 1];
+        await supabase.storage.from("portfolio").remove([fileName]);
+      }
+      const { error } = await supabase.from('service_categories').delete().eq('id', id);
+      if (error) { toast.error("Gagal menghapus jasa: " + error.message); } else { toast.success("Kategori jasa berhasil dihapus!"); fetchServices(); }
+    });
   };
 
   const handleServiceFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -514,14 +514,10 @@ const AdminDashboard = () => {
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(fileName);
-        const response = await fetch(`${apiUrl}/api/services/photos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category_id: categoryId, image_url: urlData.publicUrl, display_order: currentOrder++,
-          }),
-        });
-        if (!response.ok) throw new Error("Gagal simpan ke DB");
+        const { error: dbError } = await supabase.from('service_photos').insert([{
+          category_id: categoryId, image_url: urlData.publicUrl, display_order: currentOrder++,
+        }]);
+        if (dbError) throw new Error("Gagal simpan ke DB");
         successCount++;
       } catch (err: any) {
         toast.error(`Gagal upload ${file.name}: ${err.message}`);
@@ -536,13 +532,14 @@ const AdminDashboard = () => {
     setUploadingService(false);
   };
 
-  const handleDeleteServicePhoto = async (photo: ServicePhoto) => {
-    if (!confirm("Hapus foto ini?")) return;
-    const urlParts = photo.image_url.split("/");
-    const fileName = urlParts[urlParts.length - 1];
-    await supabase.storage.from("portfolio").remove([fileName]);
-    const { error } = await fetch(`${apiUrl}/api/services/photos/${photo.id}`, { method: "DELETE" }).then(res => res.json());
-    if (error) { toast.error("Gagal menghapus"); } else { toast.success("Foto dihapus"); fetchServices(); }
+  const handleDeleteServicePhoto = (photo: ServicePhoto) => {
+    confirmAction("Hapus Foto Jasa", "Apakah Anda yakin ingin menghapus foto jasa ini secara permanen?", async () => {
+      const urlParts = photo.image_url.split("/");
+      const fileName = urlParts[urlParts.length - 1];
+      await supabase.storage.from("portfolio").remove([fileName]);
+      const { error } = await supabase.from('service_photos').delete().eq('id', photo.id);
+      if (error) { toast.error("Gagal menghapus foto: " + error.message); } else { toast.success("Foto jasa berhasil dihapus!"); fetchServices(); }
+    });
   };
 
   const handleLogout = async () => {
@@ -1277,6 +1274,19 @@ const AdminDashboard = () => {
           </div>
         )}
       </main>
+
+      <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, isOpen: open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDialog.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -2,37 +2,28 @@ import {Mail,MapPin, Send} from "lucide-react";
 import {useState} from "react";
 import { toast } from "sonner";
 import StudioMap from "./StudioMap";
+import { supabase } from "@/integrations/supabase/client";
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({name: "", email: "", message: ""});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     try {
-      const res = await fetch(`${apiUrl}/api/contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          message: formData.message,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || "Gagal mengirim pesan. Silakan coba lagi.");
+      const { error } = await supabase.from('contact_messages').insert([{
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+      }]);
+      
+      if (error) throw new Error(error.message || "Gagal mengirim pesan. Silakan coba lagi.");
 
       setSent(true);
       setFormData({name: "", email: "", message: ""});
       setTimeout(() => setSent(false), 4000);
-      if (data?.email_sent === false) {
-        toast.success("Pesan terkirim! (Email notifikasi belum terkirim)");
-      } else {
-        toast.success("Pesan berhasil dikirim!");
-      }
+      toast.success("Pesan berhasil dikirim!");
     } catch (e: any) {
       toast.error(e?.message || "Gagal mengirim pesan. Silakan coba lagi.");
     } finally {
