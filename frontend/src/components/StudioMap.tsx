@@ -68,7 +68,7 @@ const StudioMap = () => {
 
       const map = L.map(mapRef.current, {
         center: [STUDIO_LAT, STUDIO_LNG],
-        zoom: 16,
+        zoom: 17,
         zoomControl: true,
         scrollWheelZoom: false,
         attributionControl: false,
@@ -76,8 +76,8 @@ const StudioMap = () => {
 
       mapInstanceRef.current = map;
 
-      // Dark-themed map tiles (CartoDB Dark Matter)
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      // CartoDB Voyager — dark-neutral style WITH full street/area labels
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
         maxZoom: 19,
         subdomains: "abcd",
       }).addTo(map);
@@ -88,40 +88,25 @@ const StudioMap = () => {
       // Add marker
       const marker = L.marker([STUDIO_LAT, STUDIO_LNG], { icon: DefaultIcon }).addTo(map);
 
-      // Popup
+      // Popup — no directions button, keep it clean
       marker.bindPopup(`
         <div style="
           font-family: inherit;
           text-align: center;
-          padding: 4px 2px;
-          min-width: 160px;
+          padding: 6px 4px;
+          min-width: 180px;
         ">
-          <p style="font-weight: 700; font-size: 14px; color: #d4af37; margin: 0 0 4px 0;">📍 wArnA Studio</p>
-          <p style="font-size: 11px; color: #aaa; margin: 0 0 8px 0; line-height: 1.4;">Jl. Setiawan, Ledoksari, Tumpang,<br/>Kec. Tumpang, Kab. Malang 65156</p>
-          <a 
-            href="https://www.google.com/maps/dir/?api=1&destination=${GMAPS_QUERY}"
-            target="_blank"
-            rel="noopener"
-            style="
-              display: inline-block;
-              background: #d4af37;
-              color: #000;
-              font-size: 11px;
-              font-weight: 600;
-              padding: 6px 12px;
-              border-radius: 4px;
-              text-decoration: none;
-              letter-spacing: 0.05em;
-            "
-          >🧭 Petunjuk Arah</a>
+          <p style="font-weight: 700; font-size: 14px; color: #d4af37; margin: 0 0 6px 0;">📍 wArnA Studio</p>
+          <p style="font-size: 11px; color: #666; margin: 0; line-height: 1.6;">Jl. Setiawan, Ledoksari, Tumpang,<br/>Kec. Tumpang, Kab. Malang 65156</p>
         </div>
       `, {
         closeButton: false,
         className: "studio-popup",
       });
 
-      // Open popup by default
+      // Open popup & pan map down so popup appears centered in the map container
       marker.openPopup();
+      map.panBy([0, -80], { animate: false });
 
       // Click on marker opens directions
       marker.on("click", openGoogleMapsDirections);
@@ -146,16 +131,20 @@ const StudioMap = () => {
           100% { transform: scale(2); opacity: 0; }
         }
         .studio-popup .leaflet-popup-content-wrapper {
-          background: #111;
-          border: 1px solid #333;
+          background: #1a1a1a;
+          border: 1px solid rgba(212,175,55,0.3);
           border-radius: 8px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+          color: #333;
+        }
+        .studio-popup .leaflet-popup-tip-container {
+          margin-top: -1px;
         }
         .studio-popup .leaflet-popup-tip {
-          background: #111;
+          background: #1a1a1a;
         }
         .leaflet-control-zoom a {
-          background: #111 !important;
+          background: #1a1a1a !important;
           color: #d4af37 !important;
           border-color: #333 !important;
         }
@@ -164,14 +153,14 @@ const StudioMap = () => {
         }
         .leaflet-attribution-flag { display: none !important; }
         .leaflet-control-attribution {
-          background: rgba(0,0,0,0.6) !important;
-          color: #555 !important;
+          background: rgba(255,255,255,0.7) !important;
+          color: #888 !important;
           font-size: 9px !important;
         }
       `}</style>
 
       {/* Map container */}
-      <div ref={mapRef} style={{ width: "100%", height: "320px" }} />
+      <div ref={mapRef} style={{ width: "100%", height: "380px" }} />
 
       {/* Overlay button */}
       <button

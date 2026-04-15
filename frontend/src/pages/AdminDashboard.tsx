@@ -1014,19 +1014,29 @@ const AdminDashboard = () => {
                           {catPhotos.length === 0 ? (
                             <p className="font-body text-sm text-muted-foreground">Belum ada foto di kategori ini.</p>
                           ) : (
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                              {catPhotos.map((photo) => (
-                                <div key={photo.id} className="group relative overflow-hidden border border-border bg-muted/10 flex items-center justify-center p-1">
-                                  <img src={photo.image_url} alt="" className="max-h-[200px] w-full object-contain" />
-                                  <button
-                                    onClick={() => handleDeleteServicePhoto(photo)}
-                                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive shadow-sm"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                            <>
+                              <p className="mb-3 font-body text-[10px] text-muted-foreground">
+                                💡 Foto pertama akan digunakan sebagai <span className="text-primary">gambar background</span> kartu layanan di halaman utama.
+                              </p>
+                              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                                {catPhotos.map((photo, photoIdx) => (
+                                  <div key={photo.id} className="group relative overflow-hidden border border-border bg-muted/10 flex items-center justify-center p-1">
+                                    <img src={photo.image_url} alt="" className="max-h-[200px] w-full object-contain" />
+                                    {photoIdx === 0 && (
+                                      <span className="absolute top-1 left-1 bg-primary px-2 py-0.5 font-body text-[9px] uppercase tracking-widest text-primary-foreground">
+                                        Cover
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteServicePhoto(photo)}
+                                      className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive shadow-sm"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
                           )}
                         </div>
                       )}

@@ -1,11 +1,5 @@
 import aboutPhoto from "@/assets/about-photo.jpeg";
 
-const stats = [
-  {number: "10+", label: "Tahun Pengalaman"},
-  {number: "500+", label: "Proyek Selesai"},
-  {number: "50+", label: "Penghargaan"},
-];
-
 const AboutSection = () => {
   return (
     <section id="tentang" className="px-4 py-16 sm:px-8 md:py-24 md:px-16 lg:px-24">
@@ -29,13 +23,19 @@ const AboutSection = () => {
             Kami tidak hanya menawarkan jasa fotografi, tetapi juga solusi cetak dokumen penting seperti kartu pelajar (ID card) dan pas foto dengan standar kualitas tinggi. Kepercayaan Anda adalah prioritas kami dalam setiap karya yang kami hasilkan.
           </p>
 
-          <div className="grid grid-cols-3 gap-4 border-t border-border pt-8 sm:gap-8 sm:pt-10">
-            {stats.map((stat) => (
-              <div key={stat.label}>
-                <p className="font-display text-2xl font-bold text-primary sm:text-3xl md:text-4xl">{stat.number}</p>
-                <p className="mt-1 font-body text-xs text-muted-foreground sm:text-sm">{stat.label}</p>
+          <div className="border-t border-border pt-8 sm:pt-10">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 md:gap-8">
+              <div className="flex-shrink-0">
+                <p className="font-display text-4xl sm:text-5xl font-bold text-primary">10+</p>
+                <p className="font-body text-xs sm:text-sm uppercase tracking-widest text-muted-foreground mt-1">Tahun Pengalaman</p>
               </div>
-            ))}
+              
+              <div className="hidden sm:block w-px h-16 bg-border"></div>
+              
+              <p className="font-body text-sm sm:text-base text-muted-foreground italic border-l-2 sm:border-none border-primary/50 pl-4 sm:pl-0">
+                "Lebih dari satu dekade mendedikasikan diri untuk merekam tawa, haru, dan momen penting Anda dengan kualitas visual terbaik."
+              </p>
+            </div>
           </div>
         </div>
       </div>

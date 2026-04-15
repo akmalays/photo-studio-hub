@@ -114,6 +114,93 @@ const ServiceCarousel = ({ category, intervalMs = 5000 }: { category: ServiceCat
   );
 };
 
+const ServiceImageCard = ({
+  cat,
+  idx,
+  intervalMs,
+}: {
+  cat: ServiceCategory;
+  idx: number;
+  intervalMs: number;
+}) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const photos = cat.photos;
+
+  useEffect(() => {
+    if (photos.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % photos.length);
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [photos.length, intervalMs]);
+
+  return (
+    <div className="group relative overflow-hidden rounded-sm min-h-[340px] sm:min-h-[400px] flex flex-col justify-end">
+      {/* Dark base */}
+      <div className="absolute inset-0 bg-zinc-900" />
+
+      {/* Crossfade photo stack */}
+      {photos.length > 0 ? (
+        photos.map((photo, i) => (
+          <img
+            key={photo.id}
+            src={photo.image_url}
+            alt={cat.name}
+            className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-1000 ease-in-out ${
+              i === activeIdx ? "opacity-100" : "opacity-0"
+            }`}
+            loading="lazy"
+          />
+        ))
+      ) : (
+        <div className="absolute inset-0 bg-card border border-dashed border-border" />
+      )}
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+      {/* Gold accent top-left line */}
+      <div className="absolute top-0 left-0 h-[3px] w-12 bg-primary transition-all duration-500 group-hover:w-24" />
+
+      {/* Content */}
+      <div className="relative z-10 p-6 sm:p-8">
+        <p className="mb-1 font-body text-[10px] uppercase tracking-[0.3em] text-primary/80">
+          Layanan {String(idx + 1).padStart(2, "0")}
+        </p>
+        <h3 className="mb-3 font-display text-2xl font-semibold text-white sm:text-3xl">
+          {cat.name}
+        </h3>
+        <div className="mb-4 h-[1px] w-10 bg-primary/60" />
+        <p className="mb-6 font-body text-sm leading-relaxed text-white/70 max-w-sm">
+          {cat.description}
+        </p>
+        <a
+          href="#kontak"
+          className="inline-flex items-center gap-2 border border-primary/70 px-5 py-2.5 font-body text-xs uppercase tracking-widest text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:border-primary"
+        >
+          Tanya Sekarang
+          <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+        </a>
+      </div>
+
+      {/* Dot indicators — only shown when multiple photos */}
+      {photos.length > 1 && (
+        <div className="absolute bottom-4 right-5 z-10 flex gap-1.5">
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIdx(i)}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                i === activeIdx ? "w-5 bg-primary" : "w-1.5 bg-white/30"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const GallerySection = () => {
   const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -323,28 +410,9 @@ const GallerySection = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
             {serviceCategories.map((cat, idx) => (
-              <div key={cat.id} className="flex flex-col gap-4">
-                {/* Photo carousel */}
-                {cat.photos.length > 0 ? (
-                  <ServiceCarousel category={cat} intervalMs={4000 + idx * 1500} />
-                ) : (
-                  <div className="flex aspect-[4/3] w-full items-center justify-center rounded-sm border border-dashed border-border bg-card">
-                    <p className="font-body text-sm text-muted-foreground">Belum ada foto</p>
-                  </div>
-                )}
-                {/* Description */}
-                <div>
-                  <h3 className="mb-2 font-display text-lg font-semibold text-foreground sm:text-xl">
-                    {cat.name}
-                  </h3>
-                  <div className="mb-3 h-[2px] w-10 bg-primary" />
-                  <p className="font-body text-sm leading-relaxed text-muted-foreground">
-                    {cat.description}
-                  </p>
-                </div>
-              </div>
+              <ServiceImageCard key={cat.id} cat={cat} idx={idx} intervalMs={5000 + idx * 2000} />
             ))}
           </div>
         </div>

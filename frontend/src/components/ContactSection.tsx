@@ -1,4 +1,4 @@
-import {Mail,MapPin, Send} from "lucide-react";
+import {Mail, Send} from "lucide-react";
 import {useState} from "react";
 import { toast } from "sonner";
 import StudioMap from "./StudioMap";
@@ -104,10 +104,15 @@ const ContactSection = () => {
       </div>
 
       {/* Interactive Map */}
-      <div className="mt-12 md:mt-16">
-        <div className="mb-4 flex items-center gap-3">
-          <MapPin className="h-4 w-4 text-primary" />
-          <p className="font-body text-sm uppercase tracking-[0.2em] text-muted-foreground">Lokasi Studio</p>
+      <div className="mt-16 md:mt-24">
+        <div className="mb-6 max-w-xl md:mb-10">
+          <p className="mb-3 font-body text-sm uppercase tracking-[0.3em] text-primary">Lokasi</p>
+          <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl md:text-5xl">
+            Temukan <span className="italic text-gradient-gold">Studio Kami</span>
+          </h2>
+          <p className="mt-4 font-body text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Kami berlokasi di tempat yang mudah dijangkau. Kunjungi kami langsung atau gunakan peta di bawah untuk menemukan rute terbaik menuju wArnA Studio.
+          </p>
         </div>
         <StudioMap />
       </div>
