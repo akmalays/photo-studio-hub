@@ -12,14 +12,33 @@ import Navbar from "@/components/Navbar";
 import TickerBanner from "@/components/TickerBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
-const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
+interface PortfolioCategory {
+  id: string;
+  name: string;
+  description: string;
+  display_order: number;
+  photos: { id: string; image_url: string; title: string }[];
+}
+
+interface ServiceCategory {
+  id: string;
+  name: string;
+  description: string;
+  display_order: number;
+  photos: { id: string; image_url: string }[];
+}
+
+const StudioLoader = ({onFinish, isDataLoading}: {onFinish: () => void; isDataLoading: boolean}) => {
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
+        if (prev >= 90) {
+          if (isDataLoading) {
+            return 90;
+          }
           clearInterval(interval);
           setFadeOut(true);
           setTimeout(onFinish, 600);
@@ -29,7 +48,16 @@ const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
       });
     }, 120);
     return () => clearInterval(interval);
-  }, [onFinish]);
+  }, [onFinish, isDataLoading]);
+
+  // If loading finishes when we are already at 90+%, start fading out
+  useEffect(() => {
+    if (!isDataLoading && progress >= 90 && progress < 100) {
+      setProgress(100);
+      setFadeOut(true);
+      setTimeout(onFinish, 600);
+    }
+  }, [isDataLoading, progress, onFinish]);
 
   return (
     <div className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}>
@@ -55,6 +83,11 @@ const StudioLoader = ({onFinish}: {onFinish: () => void}) => {
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+  const [collagePhotos, setCollagePhotos] = useState<string[]>([]);
+
   useEffect(() => {
     // Track visit on mount
     const track = async () => {
@@ -64,7 +97,6 @@ const Index = () => {
         let ip_hash = "frontend-visitor-" + Math.random().toString(36).substring(7); // basic fallback
         
         try {
-          // get geo local from free IP api
           const res = await fetch("https://ipapi.co/json/");
           const geo = await res.json();
           if (geo.ip) ip_hash = geo.ip;
@@ -84,6 +116,76 @@ const Index = () => {
       }
     };
     track();
+  }, []);
+
+  useEffect(() => {
+    const loadAllData = async () => {
+      try {
+        const [portCatsRes, portPhotosRes, servCatsRes, servPhotosRes] = await Promise.all([
+          supabase
+            .from("portfolio_categories")
+            .select("*")
+            .order("display_order", { ascending: true }),
+          supabase
+            .from("portfolio_photos")
+            .select("*")
+            .order("display_order", { ascending: true }),
+          supabase
+            .from("service_categories")
+            .select("*")
+            .order("display_order", { ascending: true }),
+          supabase
+            .from("service_photos")
+            .select("*")
+            .order("display_order", { ascending: true }),
+        ]);
+
+        const portCats = portCatsRes.data;
+        const portPhotos = portPhotosRes.data;
+        const servCats = servCatsRes.data;
+        const servPhotos = servPhotosRes.data;
+
+        // Map portfolio categories
+        const mappedPort: PortfolioCategory[] = [];
+        if (portCats) {
+          portCats.forEach((cat) => {
+            mappedPort.push({
+              ...cat,
+              photos: (portPhotos || []).filter((p) => p.category_id === cat.id),
+            });
+          });
+        }
+        setPortfolioCategories(mappedPort);
+
+        // Map service categories
+        const mappedServ: ServiceCategory[] = [];
+        if (servCats) {
+          servCats.forEach((cat) => {
+            mappedServ.push({
+              ...cat,
+              photos: (servPhotos || []).filter((p) => p.category_id === cat.id),
+            });
+          });
+        }
+        setServiceCategories(mappedServ);
+
+        // Construct hero collage photos (from both portfolio and service photos)
+        const allUrls: string[] = [];
+        if (portPhotos) allUrls.push(...portPhotos.map((p) => p.image_url));
+        if (servPhotos) allUrls.push(...servPhotos.map((p) => p.image_url));
+
+        if (allUrls.length > 0) {
+          const shuffled = allUrls.sort(() => 0.5 - Math.random());
+          setCollagePhotos(shuffled.slice(0, 6));
+        }
+      } catch (err) {
+        console.error("Error loading data from Supabase:", err);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    loadAllData();
   }, []);
 
   const SITE_URL = "https://warnastudio.web.id";
@@ -146,12 +248,12 @@ const Index = () => {
         })}</script>
       </Helmet>
 
-      {loading && <StudioLoader onFinish={() => setLoading(false)} />}
+      {loading && <StudioLoader onFinish={() => setLoading(false)} isDataLoading={isDataLoading} />}
       <div className="min-h-screen bg-background">
         <Navbar />
         <TickerBanner />
-        <HeroSection />
-        <GallerySection />
+        <HeroSection collagePhotos={collagePhotos} />
+        <GallerySection portfolioCategories={portfolioCategories} serviceCategories={serviceCategories} />
         <AboutSection />
         <ContactSection />
         <FooterSection />

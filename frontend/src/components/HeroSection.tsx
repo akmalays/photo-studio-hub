@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import heroPhoto from "@/assets/hero-photo.jpg";
-import { supabase } from "@/integrations/supabase/client";
 
 const SERVICES = [
   "Foto Studio",
@@ -40,30 +38,8 @@ const useTypingEffect = (words: string[], typingSpeed = 80, deletingSpeed = 50, 
   return displayed;
 };
 
-const HeroSection = () => {
-  const [collagePhotos, setCollagePhotos] = useState<string[]>([]);
+const HeroSection = ({ collagePhotos }: { collagePhotos: string[] }) => {
   const typedService = useTypingEffect(SERVICES);
-
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        const { data: portPhotos } = await supabase.from("portfolio_photos").select("image_url").limit(5);
-        const { data: servPhotos } = await supabase.from("service_photos").select("image_url").limit(5);
-        
-        const allPhotos: string[] = [];
-        if (portPhotos) allPhotos.push(...portPhotos.map(p => p.image_url));
-        if (servPhotos) allPhotos.push(...servPhotos.map(p => p.image_url));
-        
-        if (allPhotos.length > 0) {
-          const shuffled = allPhotos.sort(() => 0.5 - Math.random());
-          setCollagePhotos(shuffled.slice(0, 6));
-        }
-      } catch (error) {
-        console.error("Failed to load hero collage photos:", error);
-      }
-    };
-    fetchPhotos();
-  }, []);
 
   const getGridStyles = (index: number) => {
     switch (index) {
@@ -93,11 +69,7 @@ const HeroSection = () => {
             ))}
           </div>
         ) : (
-          <img
-            src={heroPhoto}
-            alt="Layanan Foto Studio dan Cetak"
-            className="h-full w-full object-cover object-[50%_25%]"
-          />
+          <div className="h-full w-full bg-gradient-to-br from-zinc-950 to-zinc-900" />
         )}
         <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-background via-background/95 to-background/50 sm:via-background/80 sm:to-background/20" />
       </div>

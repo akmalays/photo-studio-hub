@@ -1,20 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import gallery1 from "@/assets/gallery-1.jpg";
-import gallery2 from "@/assets/gallery-2.jpg";
-import gallery3 from "@/assets/gallery-3.jpg";
-import gallery4 from "@/assets/gallery-4.jpg";
-import gallery5 from "@/assets/gallery-5.jpg";
-import gallery6 from "@/assets/gallery-6.jpg";
-
-interface PhotoItem {
-  src: string;
-  title: string;
-  category: string;
-  span: string;
-}
 
 interface PortfolioCategory {
   id: string;
@@ -31,88 +17,6 @@ interface ServiceCategory {
   display_order: number;
   photos: { id: string; image_url: string }[];
 }
-
-const defaultPhotos: PhotoItem[] = [
-  { src: gallery1, title: "Wedding", category: "Pernikahan", span: "row-span-2" },
-  { src: gallery2, title: "Landscape", category: "Lanskap", span: "" },
-  { src: gallery3, title: "Street", category: "Jalanan", span: "row-span-2" },
-  { src: gallery4, title: "Fashion", category: "Fashion", span: "" },
-  { src: gallery5, title: "Culinary", category: "Kuliner", span: "row-span-2" },
-  { src: gallery6, title: "Architecture", category: "Arsitektur", span: "" },
-];
-
-const ServiceCarousel = ({ category, intervalMs = 5000 }: { category: ServiceCategory; intervalMs?: number }) => {
-  const [current, setCurrent] = useState(0);
-  const [sliding, setSliding] = useState<"left" | "right" | null>(null);
-
-  const photos = category.photos || [];
-
-  useEffect(() => {
-    if (photos.length <= 1) return;
-    
-    const interval = setInterval(() => {
-      slide("next");
-    }, intervalMs);
-
-    return () => clearInterval(interval);
-  }, [photos.length, current]); // Re-run when current changes to reset timer for smoother flow if user clicks manually
-
-  if (photos.length === 0) return null;
-
-  const slide = (dir: "prev" | "next") => {
-    if (sliding) return; // Prevent double trigger
-    setSliding(dir === "next" ? "left" : "right");
-    setTimeout(() => {
-      setCurrent((prev) =>
-        dir === "next" ? (prev + 1) % photos.length : (prev - 1 + photos.length) % photos.length
-      );
-      setSliding(null);
-    }, 200);
-  };
-
-  return (
-    <div className="group relative w-full flex items-center justify-center overflow-hidden rounded-sm">
-      <img
-        src={photos[current].image_url}
-        alt={category.name}
-        className={`max-h-[420px] w-auto max-w-full block transition-all duration-300 ease-in-out ${
-          sliding === "left"
-            ? "-translate-x-8 opacity-0"
-            : sliding === "right"
-            ? "translate-x-8 opacity-0"
-            : "translate-x-0 opacity-100"
-        }`}
-      />
-      {photos.length > 1 && (
-        <>
-          <button
-            onClick={() => slide("prev")}
-            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/50 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-background"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => slide("next")}
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/50 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-background"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-            {photos.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-1 rounded-full transition-all duration-300 ${
-                  i === current ? "w-6 bg-primary" : "w-1.5 bg-foreground/20"
-                }`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 const ServiceImageCard = ({
   cat,
@@ -201,8 +105,13 @@ const ServiceImageCard = ({
   );
 };
 
-const GallerySection = () => {
-  const [portfolioCategories, setPortfolioCategories] = useState<PortfolioCategory[]>([]);
+const GallerySection = ({
+  portfolioCategories,
+  serviceCategories,
+}: {
+  portfolioCategories: PortfolioCategory[];
+  serviceCategories: ServiceCategory[];
+}) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollPortfolio = (direction: "left" | "right") => {
@@ -218,54 +127,6 @@ const GallerySection = () => {
   const [selectedCatIdx, setSelectedCatIdx] = useState<number | null>(null);
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState<number>(0);
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null);
-  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
-
-  useEffect(() => {
-    const fetchPortfolio = async () => {
-      const { data: categories } = await supabase
-        .from("portfolio_categories")
-        .select("*")
-        .order("display_order", { ascending: true });
-
-      if (categories && categories.length > 0) {
-        const { data: photos } = await supabase
-          .from("portfolio_photos")
-          .select("*")
-          .order("display_order", { ascending: true });
-
-        const mapped: PortfolioCategory[] = categories.map((cat) => ({
-          ...cat,
-          photos: (photos || []).filter((p) => p.category_id === cat.id),
-        }));
-        setPortfolioCategories(mapped);
-      }
-    };
-    
-    const fetchServices = async () => {
-      const { data: categories } = await supabase
-        .from("service_categories")
-        .select("*")
-        .order("display_order", { ascending: true });
-
-      if (categories && categories.length > 0) {
-        const { data: photos } = await supabase
-          .from("service_photos")
-          .select("*")
-          .order("display_order", { ascending: true });
-
-        const mapped: ServiceCategory[] = categories.map((cat) => ({
-          ...cat,
-          photos: (photos || []).filter((p) => p.category_id === cat.id),
-        }));
-        setServiceCategories(mapped);
-      }
-    };
-
-    fetchPortfolio();
-    fetchServices();
-  }, []);
-
-
 
   const goTo = useCallback(
     (direction: "prev" | "next") => {
@@ -328,69 +189,46 @@ const GallerySection = () => {
         {/* Scroll Container */}
         <div ref={scrollContainerRef} className="flex w-full gap-4 sm:gap-6 overflow-x-auto pb-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {portfolioCategories.length > 0 ? (
-          portfolioCategories.map((cat, i) => {
-            if (cat.photos.length === 0) return null;
-            const coverPhoto = cat.photos[0];
+            portfolioCategories.map((cat, i) => {
+              if (cat.photos.length === 0) return null;
+              const coverPhoto = cat.photos[0];
 
-            return (
-              <div
-                key={cat.id}
-                className="shrink-0 snap-center relative cursor-pointer overflow-hidden rounded-xl bg-muted/10 h-[400px] sm:h-[500px]"
-                onClick={() => {
-                  setSelectedCatIdx(i);
-                  setSelectedPhotoIdx(0);
-                }}
-              >
-                <div className="relative group flex h-full items-center justify-center">
-                  <img
-                    src={coverPhoto.image_url}
-                    alt={cat.name}
-                    className="h-full w-auto object-contain transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute rounded-xl bg-background/80 px-6 py-3 text-center backdrop-blur-sm shadow-xl transition-transform duration-500 group-hover:scale-110 pointer-events-none">
-                    <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
-                      {cat.description || cat.name}
-                    </p>
-                    <p className="mt-0.5 font-display text-xl text-foreground capitalize">
-                      {cat.name}
-                    </p>
-                    <p className="mt-1 font-body text-[10px] text-muted-foreground">
-                      {cat.photos.length} Foto
-                    </p>
+              return (
+                <div
+                  key={cat.id}
+                  className="shrink-0 snap-center relative cursor-pointer overflow-hidden rounded-xl bg-muted/10 h-[400px] sm:h-[500px]"
+                  onClick={() => {
+                    setSelectedCatIdx(i);
+                    setSelectedPhotoIdx(0);
+                  }}
+                >
+                  <div className="relative group flex h-full items-center justify-center">
+                    <img
+                      src={coverPhoto.image_url}
+                      alt={cat.name}
+                      className="h-full w-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute rounded-xl bg-background/80 px-6 py-3 text-center backdrop-blur-sm shadow-xl transition-transform duration-500 group-hover:scale-110 pointer-events-none">
+                      <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
+                        {cat.description || cat.name}
+                      </p>
+                      <p className="mt-0.5 font-display text-xl text-foreground capitalize">
+                        {cat.name}
+                      </p>
+                      <p className="mt-1 font-body text-[10px] text-muted-foreground">
+                        {cat.photos.length} Foto
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        ) : (
-          defaultPhotos.map((photo, i) => (
-            <div
-              key={i}
-              className="shrink-0 snap-center relative cursor-pointer overflow-hidden rounded-xl bg-muted/10 h-[400px] sm:h-[500px]"
-            >
-              <div className="relative group flex h-full items-center justify-center">
-                <img
-                  src={photo.src}
-                  alt={photo.title}
-                  className="h-full w-auto object-contain transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute rounded-xl bg-background/80 px-6 py-3 text-center backdrop-blur-sm shadow-xl transition-transform duration-500 group-hover:scale-110 pointer-events-none">
-                  <p className="font-body text-[10px] uppercase tracking-[0.3em] text-primary">
-                    {photo.category}
-                  </p>
-                  <p className="mt-0.5 font-display text-xl text-foreground capitalize">
-                    {photo.category}
-                  </p>
-                  <p className="mt-1 font-body text-[10px] text-muted-foreground">
-                    1 Foto
-                  </p>
-                </div>
-              </div>
+              );
+            })
+          ) : (
+            <div className="flex h-40 w-full items-center justify-center text-muted-foreground">
+              Belum ada foto portfolio.
             </div>
-          ))
-        )}
+          )}
         </div>
       </div>
 
